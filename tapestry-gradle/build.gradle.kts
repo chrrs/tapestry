@@ -1,18 +1,22 @@
 plugins {
     `java-gradle-plugin`
     `kotlin-dsl`
+    `maven-publish`
 }
 
 group = "me.chrr.tapestry"
-version = "1.0.0"
+version = gradle.parent!!.rootProject.property("plugin.version") as String
 
 java.toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 
 gradlePlugin {
+    vcsUrl = "https://github.com/chrrs/tapestry"
+
     plugins.create("me.chrr.tapestry.gradle") {
         id = "me.chrr.tapestry.gradle"
         displayName = "Tapestry Gradle"
         implementationClass = "me.chrr.tapestry.gradle.TapestryPlugin"
+        version = project.version as String
     }
 }
 
@@ -49,6 +53,30 @@ tasks {
         into("META-INF/jars") {
             from(apiJar)
             rename { "api.jar" }
+        }
+    }
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/chrrs/tapestry")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+
+    publications {
+        register<MavenPublication>("gpr") {
+            groupId = project.group.toString()
+            artifactId = project.name
+            version = project.version.toString()
+
+            from(components["java"])
+            artifact(tasks["apiJar"])
         }
     }
 }
