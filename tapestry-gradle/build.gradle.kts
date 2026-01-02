@@ -70,15 +70,4 @@ publishing {
             }
         }
     }
-
-    publications {
-        register<MavenPublication>("gpr") {
-            groupId = project.group.toString()
-            artifactId = project.name
-            version = project.version.toString()
-
-            from(components["java"])
-            artifact(tasks["apiJar"])
-        }
-    }
 }
