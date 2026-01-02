@@ -46,10 +46,12 @@ sourceSets {
 tasks {
     val apiJar = register<Jar>("apiJar") {
         archiveBaseName = "tapestry-gradle-api"
+        archiveClassifier.set("api")
         from(sourceSets.named("api").map { it.output })
     }
 
     getByName<Jar>("jar") {
+        archiveClassifier.set("")
         into("META-INF/jars") {
             from(apiJar)
             rename { "api.jar" }
