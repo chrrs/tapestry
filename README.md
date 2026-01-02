@@ -8,7 +8,7 @@
 For every mod developer, there comes a point in time where they get fed up with the status quo, and reinvent the world.
 With that being said, here's some cool libraries to make building multi-loader mods a lot easier!
 
-## Components
+## Modules
 
 - **`tapestry-gradle`:** A Gradle plugin that's capable of building universal JARs that work on both Fabric and
   Neoforge, thanks to Mojang deobfuscating the game! It uses Loom and ModDevGradle under the hood, and also does some
