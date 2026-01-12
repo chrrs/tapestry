@@ -5,8 +5,8 @@ import net.neoforged.moddevgradle.boot.ModDevPlugin
 import net.neoforged.moddevgradle.dsl.NeoForgeExtension
 import org.gradle.api.Project
 import org.gradle.jvm.tasks.Jar
-import org.gradle.kotlin.dsl.getByName
-import org.gradle.kotlin.dsl.getByType
+import org.gradle.kotlin.dsl.named
+import org.gradle.kotlin.dsl.the
 
 class NeoFormPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(tapestry, target) {
     override fun applyAfterEvaluate() {
@@ -20,7 +20,7 @@ class NeoFormPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin
 
         // Apply ModDevGradle in Vanilla mode to put Minecraft on the classpath.
         target.plugins.apply(ModDevPlugin::class.java)
-        val neoForge = target.extensions.getByType<NeoForgeExtension>()
+        val neoForge = target.the<NeoForgeExtension>()
 
         neoForge.enable {
             neoFormVersion = neoForm
@@ -28,7 +28,7 @@ class NeoFormPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin
         }
 
         // Make sure the JAR file is named correctly.
-        target.tasks.getByName<Jar>("jar") {
+        target.tasks.named<Jar>("jar") {
             tapestry.applyArchiveName(this, "common")
         }
     }

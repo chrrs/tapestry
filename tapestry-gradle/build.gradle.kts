@@ -50,7 +50,7 @@ tasks {
         from(sourceSets.named("api").map { it.output })
     }
 
-    getByName<Jar>("jar") {
+    named<Jar>("jar") {
         archiveClassifier.set("")
         into("META-INF/jars") {
             from(apiJar)

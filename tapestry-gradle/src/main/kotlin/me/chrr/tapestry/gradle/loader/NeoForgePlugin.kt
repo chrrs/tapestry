@@ -9,9 +9,9 @@ import net.neoforged.moddevgradle.dsl.NeoForgeExtension
 import org.gradle.api.Project
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.jvm.tasks.Jar
-import org.gradle.kotlin.dsl.getByName
-import org.gradle.kotlin.dsl.getByType
+import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
+import org.gradle.kotlin.dsl.the
 
 class NeoForgePlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(tapestry, target) {
     override fun applyAfterEvaluate() {
@@ -20,7 +20,7 @@ class NeoForgePlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugi
 
         // Apply ModDevGradle to build the mod.
         target.plugins.apply(ModDevPlugin::class.java)
-        val neoForge = target.extensions.getByType<NeoForgeExtension>()
+        val neoForge = target.the<NeoForgeExtension>()
 
         val main = java.sourceSets.getByName("main")
         neoForge.mods.create(tapestry.info.id.get()).sourceSet(main)
@@ -35,10 +35,10 @@ class NeoForgePlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugi
             "generateNeoForgeModsToml", tapestry, Loader.NeoForge
         )
 
-        target.tasks.getByName("processResources").dependsOn(generateManifest)
+        target.tasks.named("processResources") { dependsOn(generateManifest) }
 
         // Make sure the JAR file is named correctly.
-        target.tasks.getByName<Jar>("jar") {
+        target.tasks.named<Jar>("jar") {
             tapestry.applyArchiveName(this, "neoforge")
         }
 
@@ -71,9 +71,9 @@ class NeoForgePlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugi
     override fun addBuildDependency(other: LoaderPlugin) {
         target.dependencies.add("compileOnly", other.target)
 
-        val sourceSets = other.target.extensions.getByType<SourceSetContainer>()
-        target.tasks.getByName<Jar>("jar").from(sourceSets.getByName("main").output)
-        target.tasks.getByName<Jar>("sourcesJar").from(sourceSets.getByName("main").allSource)
+        val sourceSets = other.target.the<SourceSetContainer>()
+        target.tasks.named<Jar>("jar") { from(sourceSets.getByName("main").output) }
+        target.tasks.named<Jar>("sourcesJar") { from(sourceSets.getByName("main").allSource) }
 
         // FIXME: port over JiJ.
     }

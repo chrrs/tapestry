@@ -8,7 +8,7 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskAction
-import org.gradle.kotlin.dsl.getByType
+import org.gradle.kotlin.dsl.the
 import java.io.File
 import java.nio.file.Files
 import javax.inject.Inject
@@ -25,15 +25,16 @@ abstract class GenerateManifestTask @Inject constructor(
 
     init {
         // Read the output of the annotation processor.
-        dependsOn("compileJava")
-        project.tasks.getByName("compileJava").doLast {
-            val sourceSets = project.extensions.getByType(SourceSetContainer::class)
-            for (sourceDir in sourceSets.flatMap { it.output.generatedSourcesDirs }) {
-                val tapestryDir = sourceDir.resolve("tapestry")
-                readPairsToMap(tapestryDir.resolve("entrypoints.txt"), entrypoints)
-                readPairsToMap(tapestryDir.resolve("platforms.txt"), platforms)
+        dependsOn(project.tasks.named("compileJava") {
+            doLast {
+                val sourceSets = project.the<SourceSetContainer>()
+                for (sourceDir in sourceSets.flatMap { it.output.generatedSourcesDirs }) {
+                    val tapestryDir = sourceDir.resolve("tapestry")
+                    readPairsToMap(tapestryDir.resolve("entrypoints.txt"), entrypoints)
+                    readPairsToMap(tapestryDir.resolve("platforms.txt"), platforms)
+                }
             }
-        }
+        })
 
         // Set our output file to the right path depending on loader.
         outputFile.convention(project.tapestryBuildDir.map {

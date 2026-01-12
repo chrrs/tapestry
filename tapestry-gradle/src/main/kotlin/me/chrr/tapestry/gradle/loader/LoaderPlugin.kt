@@ -6,7 +6,7 @@ import org.gradle.api.Project
 import org.gradle.api.plugins.JavaLibraryPlugin
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.jvm.toolchain.JavaLanguageVersion
-import org.gradle.kotlin.dsl.getByType
+import org.gradle.kotlin.dsl.the
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 
@@ -16,14 +16,14 @@ abstract class LoaderPlugin(val tapestry: TapestryExtension, val target: Project
 
     fun applyJavaPlugin(): JavaPluginExtension {
         target.plugins.apply(JavaLibraryPlugin::class.java)
-        val java = target.extensions.getByType<JavaPluginExtension>()
+        val java = target.the<JavaPluginExtension>()
         java.toolchain.languageVersion.set(JavaLanguageVersion.of(25))
         java.withSourcesJar()
 
         // Include any generated sources in the final build.
         java.sourceSets.getByName("main").resources
             .srcDir(target.tapestryBuildDir.map { it.dir("generated") })
-        target.tasks.getByName("sourcesJar").dependsOn(target.tasks.getByName("processResources"))
+        target.tasks.named("sourcesJar") { dependsOn(target.tasks.named("processResources")) }
 
         return java
     }

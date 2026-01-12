@@ -106,7 +106,7 @@ class TapestryPlugin : Plugin<Project> {
                 "tapestry-${name.lowercase()}-api"
             ) {
                 plugins.forEach {
-                    val jar = it.target.tasks.getByName<Jar>("jar")
+                    val jar = it.target.tasks.named<Jar>("jar")
                     outgoing.artifact(jar) {
                         builtBy(jar)
                         classifier = name.lowercase()
@@ -153,14 +153,14 @@ class TapestryPlugin : Plugin<Project> {
                 dependsOn(jar)
 
                 val paths = projects
-                    .map { it.extensions.getByType<SourceSetContainer>().getByName("main") }
+                    .map { it.the<SourceSetContainer>().getByName("main") }
                     .map { if (sources) it.allSource else it.output }
                 from(paths)
             }
 
         val mergedJar = createTask("mergedJar", false)
         val mergedSourcesJar = createTask("mergedSourcesJar", true)
-        root.tasks.getByName("build").dependsOn(mergedJar)
+        root.tasks.named("build") { dependsOn(mergedJar) }
 
         // Then, we register these tasks as the default java-api and java-runtime tasks.
         val api = createProducerConfiguration(root, "tapestryMergedApiElements", Usage.JAVA_API) {
