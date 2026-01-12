@@ -44,7 +44,6 @@ jobs:
       - name: Publish
         run: ./gradlew tapestry-gradle:publish --no-daemon
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE: 'true'
 
       - name: Push changes
