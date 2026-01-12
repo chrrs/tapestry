@@ -3,7 +3,9 @@ package me.chrr.tapestry.gradle
 import org.gradle.api.Project
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.model.ObjectFactory
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.kotlin.dsl.listProperty
 import org.gradle.kotlin.dsl.newInstance
 import org.gradle.kotlin.dsl.property
@@ -28,15 +30,15 @@ abstract class TapestryExtension(objects: ObjectFactory) {
     fun Project.prop(name: String): Provider<String> =
         project.providers.gradleProperty(name)
 
-    internal fun isCI() = System.getenv("CI") == "true"
+    internal fun isCI() = System.getenv("CI") != null
+    internal fun isRelease() = System.getenv("RELEASE") != null
 
-    internal fun createArchiveFileName(suffix: String): String {
-        val id = info.id.get()
-        val version = info.version.get()
-        val minecraft = versions.minecraft.get()
-        return "$id$suffix-$version+mc$minecraft.jar"
+    internal fun applyArchiveName(task: AbstractArchiveTask, appendix: String?) {
+        val version = info.version.get() + "+mc" + versions.minecraft.get()
+        task.archiveBaseName.set(info.id)
+        appendix?.let { task.archiveAppendix.set(it) }
+        task.archiveVersion.set(version)
     }
-
 
     open class Versions @Inject constructor(objects: ObjectFactory) {
         val minecraft = objects.property<String>()
@@ -46,9 +48,9 @@ abstract class TapestryExtension(objects: ObjectFactory) {
     }
 
     open class Projects @Inject constructor(objects: ObjectFactory) {
-        val common = objects.listProperty<Project>()
-        val fabric = objects.listProperty<Project>()
-        val neoforge = objects.listProperty<Project>()
+        val common: ListProperty<Project> = objects.listProperty<Project>().unsetConvention()
+        val fabric: ListProperty<Project> = objects.listProperty<Project>().unsetConvention()
+        val neoforge: ListProperty<Project> = objects.listProperty<Project>().unsetConvention()
     }
 
     open class Info @Inject constructor(objects: ObjectFactory) {

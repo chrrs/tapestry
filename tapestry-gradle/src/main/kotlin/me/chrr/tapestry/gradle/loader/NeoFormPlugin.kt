@@ -29,7 +29,7 @@ class NeoFormPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin
 
         // Make sure the JAR file is named correctly.
         target.tasks.getByName<Jar>("jar") {
-            archiveFileName.set(tapestry.createArchiveFileName("-common"))
+            tapestry.applyArchiveName(this, "common")
         }
     }
 

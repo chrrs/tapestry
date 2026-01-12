@@ -7,6 +7,7 @@ import me.chrr.tapestry.gradle.manifest.GenerateManifestTask
 import net.fabricmc.loom.LoomNoRemapGradlePlugin
 import net.fabricmc.loom.api.LoomGradleExtensionAPI
 import org.gradle.api.Project
+import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.getByName
 import org.gradle.kotlin.dsl.getByType
@@ -38,7 +39,7 @@ class FabricPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(
 
         // Make sure the JAR file is named correctly.
         target.tasks.getByName<Jar>("jar") {
-            archiveFileName.set(tapestry.createArchiveFileName("-fabric"))
+            tapestry.applyArchiveName(this, "fabric")
         }
 
         // Generate run configurations.
@@ -73,7 +74,11 @@ class FabricPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(
     }
 
     override fun addBuildDependency(other: LoaderPlugin) {
-        target.dependencies.add("implementation", other.target)
+        target.dependencies.add("compileOnly", other.target)
+
+        val sourceSets = other.target.extensions.getByType<SourceSetContainer>()
+        target.tasks.getByName<Jar>("jar").from(sourceSets.getByName("main").output)
+        target.tasks.getByName<Jar>("sourcesJar").from(sourceSets.getByName("main").allSource)
 
         // FIXME: port over JiJ.
     }

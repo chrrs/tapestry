@@ -18,10 +18,12 @@ abstract class LoaderPlugin(val tapestry: TapestryExtension, val target: Project
         target.plugins.apply(JavaLibraryPlugin::class.java)
         val java = target.extensions.getByType<JavaPluginExtension>()
         java.toolchain.languageVersion.set(JavaLanguageVersion.of(25))
+        java.withSourcesJar()
 
         // Include any generated sources in the final build.
         java.sourceSets.getByName("main").resources
             .srcDir(target.tapestryBuildDir.map { it.dir("generated") })
+        target.tasks.getByName("sourcesJar").dependsOn(target.tasks.getByName("processResources"))
 
         return java
     }
