@@ -11,7 +11,7 @@ tapestry {
     }
 
     info {
-        id = "tapestry-config"
+        id = "tapestry_config"
         version = "${rootProject.version}"
 
         name = "Tapestry Config"
@@ -23,7 +23,7 @@ tapestry {
         sources = "https://github.com/chrrs/tapestry"
         issues = "https://github.com/chrrs/tapestry/issues"
 
-        icon = "assets/tapestry-config/icon.png"
+        icon = "assets/tapestry_config/icon.png"
         parentMod = "tapestry"
         isLibrary = true
     }

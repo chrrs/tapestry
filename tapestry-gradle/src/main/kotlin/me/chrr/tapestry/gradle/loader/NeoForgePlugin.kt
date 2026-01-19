@@ -70,11 +70,14 @@ class NeoForgePlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugi
     }
 
     override fun addBuildDependency(other: LoaderPlugin) {
-        target.dependencies.add("compileOnly", other.target)
+        target.dependencies.add("api", other.target)
 
         val sourceSets = other.target.the<SourceSetContainer>()
         target.tasks.named<Jar>("jar") { from(sourceSets.getByName("main").output) }
         target.tasks.named<Jar>("sourcesJar") { from(sourceSets.getByName("main").allSource) }
+
+        val neoForge = target.the<NeoForgeExtension>()
+        neoForge.mods.configureEach { sourceSet(sourceSets.getByName("main")) }
 
         // FIXME: port over JiJ.
     }
