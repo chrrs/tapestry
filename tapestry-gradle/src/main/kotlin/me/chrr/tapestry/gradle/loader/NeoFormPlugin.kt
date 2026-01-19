@@ -9,8 +9,9 @@ import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.the
 
 class NeoFormPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(tapestry, target) {
-    override fun applyAfterEvaluate() {
+    override fun applyLoaderPlugin() {
         super.applyJavaPlugin()
+        super.preferPlatformAttribute("common")
 
         val minecraft = tapestry.versions.minecraft.get()
         val neoForm = tapestry.versions.neoform.get()

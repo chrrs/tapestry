@@ -14,9 +14,10 @@ import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.the
 
 class NeoForgePlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(tapestry, target) {
-    override fun applyAfterEvaluate() {
+    override fun applyLoaderPlugin() {
         val java = super.applyJavaPlugin()
         super.applyAnnotationProcessor()
+        super.preferPlatformAttribute("neoforge")
 
         // Apply ModDevGradle to build the mod.
         target.plugins.apply(ModDevPlugin::class.java)

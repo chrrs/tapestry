@@ -15,9 +15,10 @@ import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.the
 
 class FabricPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(tapestry, target) {
-    override fun applyAfterEvaluate() {
+    override fun applyLoaderPlugin() {
         val java = super.applyJavaPlugin()
         super.applyAnnotationProcessor()
+        super.preferPlatformAttribute("fabric")
 
         // Apply Fabric Loom to build the mod.
         target.plugins.apply(LoomNoRemapGradlePlugin::class.java)

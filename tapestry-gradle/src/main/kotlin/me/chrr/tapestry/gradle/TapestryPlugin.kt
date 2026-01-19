@@ -6,18 +6,19 @@ import me.chrr.tapestry.gradle.loader.NeoForgePlugin
 import me.chrr.tapestry.gradle.loader.NeoFormPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.artifacts.Configuration
+import org.gradle.api.attributes.Attribute
 import org.gradle.api.attributes.Bundling
 import org.gradle.api.attributes.Category
 import org.gradle.api.attributes.Usage
 import org.gradle.api.component.AdhocComponentWithVariants
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.plugins.JavaBasePlugin
-import org.gradle.api.provider.Provider
 import org.gradle.api.publish.internal.component.DefaultAdhocSoftwareComponent
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.*
+
+val PLATFORM_ATTRIBUTE: Attribute<String> = Attribute.of("me.chrr.tapestry.platform", String::class.java)
 
 class TapestryPlugin : Plugin<Project> {
     override fun apply(target: Project) {
@@ -50,8 +51,8 @@ class TapestryPlugin : Plugin<Project> {
 
             // Finally, we process all the loader subprojects.
             val plugins = applyLoaderPlugins(target, tapestry)
-            createApiConfigurations(target, plugins, component)
-            createMergedJarTask(target, plugins.map { it.target }, tapestry, component)
+            createMergedJarTask(target, plugins.map { it.target }, tapestry)
+            createConfigurations(target, plugins, component)
         }
     }
 
@@ -86,58 +87,72 @@ class TapestryPlugin : Plugin<Project> {
 
         // Apply the common plugins.
         for (plugin in commonPlugins)
-            plugin.applyAfterEvaluate()
+            plugin.applyLoaderPlugin()
 
         // Apply the loader plugins and depend on the common projects.
         for (plugin in loaderPlugins) {
-            plugin.applyAfterEvaluate()
+            plugin.applyLoaderPlugin()
             commonPlugins.forEach { plugin.addBuildDependency(it) }
         }
 
         return listOf(commonPlugins, loaderPlugins).flatten()
     }
 
-    fun createApiConfigurations(root: Project, plugins: List<LoaderPlugin>, component: AdhocComponentWithVariants) {
-        // For each of our platform, we create a separate API configuration. This way, other tapestry
-        // projects can depend on different loaders depending on the environment.
-        fun createApiConfiguration(name: String, plugins: List<LoaderPlugin>) {
-            val api = createProducerConfiguration(
-                root, "tapestry${name}ApiElements",
-                "tapestry-${name.lowercase()}-api"
-            ) {
-                plugins.forEach {
-                    val jar = it.target.tasks.named<Jar>("jar")
-                    outgoing.artifact(jar) {
-                        builtBy(jar)
-                        classifier = name.lowercase()
-                    }
+    fun createConfigurations(root: Project, plugins: List<LoaderPlugin>, component: AdhocComponentWithVariants) {
+        fun createProducerConfiguration(name: String, usage: String) =
+            root.configurations.register(name) {
+                attributes.attribute(Usage.USAGE_ATTRIBUTE, root.objects.named(usage))
+                attributes.attribute(Category.CATEGORY_ATTRIBUTE, root.objects.named(Category.LIBRARY))
+                attributes.attribute(Bundling.BUNDLING_ATTRIBUTE, root.objects.named(Bundling.EXTERNAL))
 
-                    it.target.tasks.findByName("sourcesJar")?.let { sources ->
-                        outgoing.artifact(sources) {
-                            builtBy(sources)
-                            classifier = "${name.lowercase()}-sources"
+                outgoing.artifact(root.tasks.named("mergedJar"))
+                outgoing.artifact(root.tasks.named("mergedSourcesJar"))
+
+                isCanBeConsumed = true
+                isCanBeResolved = false
+            }
+
+        // Create a compile-time configuration that defaults to the merged jar.
+        val apiElements = createProducerConfiguration("tapestryApiElements", Usage.JAVA_API)
+        component.addVariantsFromConfiguration(apiElements.get()) {
+            mapToMavenScope("compile")
+        }
+
+        // Then, for each platform, we create a variant with an attribute.
+        fun addVariant(name: String, loaderPlugins: List<LoaderPlugin>) {
+            apiElements.configure {
+                outgoing.variants.create(name) {
+                    attributes.attribute(PLATFORM_ATTRIBUTE, name.lowercase())
+
+                    // FIXME: this breaks with multiple loader plugins.
+                    loaderPlugins.forEach { plugin ->
+                        val jar = plugin.target.tasks.named("jar")
+                        artifact(jar) { classifier = name.lowercase() }
+
+                        plugin.target.tasks.findByName("sourcesJar")?.let { sources ->
+                            artifact(sources) { classifier = "${name.lowercase()}-sources" }
                         }
                     }
                 }
             }
-
-            component.addVariantsFromConfiguration(api.get()) {
-                mapToMavenScope("compile")
-            }
         }
 
-        createApiConfiguration("Common", plugins.filterIsInstance<NeoFormPlugin>())
-        createApiConfiguration("Fabric", plugins.filterIsInstance<FabricPlugin>())
-        createApiConfiguration("NeoForge", plugins.filterIsInstance<NeoForgePlugin>())
+        addVariant("Common", plugins.filterIsInstance<NeoFormPlugin>())
+        addVariant("Fabric", plugins.filterIsInstance<FabricPlugin>())
+        addVariant("NeoForge", plugins.filterIsInstance<NeoForgePlugin>())
+
+        // At runtime, we can just use the merged jar always.
+        val runtimeElements = createProducerConfiguration("tapestryRuntimeElements", Usage.JAVA_RUNTIME)
+        component.addVariantsFromConfiguration(runtimeElements.get()) {
+            mapToMavenScope("runtime")
+        }
     }
 
     fun createMergedJarTask(
         root: Project,
         projects: List<Project>,
         tapestry: TapestryExtension,
-        component: AdhocComponentWithVariants
     ) {
-        // We create two tasks, one for the compiled mod, and one for the sources.
         fun createTask(name: String, sources: Boolean) =
             root.tasks.register<Jar>(name) {
                 group = "build"
@@ -158,44 +173,10 @@ class TapestryPlugin : Plugin<Project> {
                 from(paths)
             }
 
+        // Create a task for both the final JAR, and the sources JAR.
         val mergedJar = createTask("mergedJar", false)
-        val mergedSourcesJar = createTask("mergedSourcesJar", true)
         root.tasks.named("build") { dependsOn(mergedJar) }
 
-        // Then, we register these tasks as the default java-api and java-runtime tasks.
-        val api = createProducerConfiguration(root, "tapestryMergedApiElements", Usage.JAVA_API) {
-            outgoing.artifact(mergedJar) { builtBy(mergedJar) }
-            outgoing.artifact(mergedSourcesJar) { builtBy(mergedSourcesJar) }
-        }
-
-        component.addVariantsFromConfiguration(api.get()) {
-            mapToMavenScope("compile")
-        }
-
-        val runtime = createProducerConfiguration(root, "tapestryMergedRuntimeElements", Usage.JAVA_RUNTIME) {
-            outgoing.artifact(mergedJar) { builtBy(mergedJar) }
-            outgoing.artifact(mergedSourcesJar) { builtBy(mergedSourcesJar) }
-        }
-
-        component.addVariantsFromConfiguration(runtime.get()) {
-            mapToMavenScope("runtime")
-        }
+        createTask("mergedSourcesJar", true)
     }
-
-    private fun createProducerConfiguration(
-        target: Project,
-        name: String,
-        usage: String,
-        action: Configuration.() -> Unit
-    ): Provider<Configuration> =
-        target.configurations.register(name) {
-            attributes.attribute(Usage.USAGE_ATTRIBUTE, target.objects.named(usage))
-            attributes.attribute(Category.CATEGORY_ATTRIBUTE, target.objects.named(Category.LIBRARY))
-            attributes.attribute(Bundling.BUNDLING_ATTRIBUTE, target.objects.named(Bundling.EXTERNAL))
-
-            this.action()
-
-            isCanBeConsumed = true
-            isCanBeResolved = false
-        }
 }
