@@ -6,10 +6,8 @@ import me.chrr.tapestry.gradle.loader.NeoForgePlugin
 import me.chrr.tapestry.gradle.loader.NeoFormPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.attributes.Attribute
-import org.gradle.api.attributes.Bundling
-import org.gradle.api.attributes.Category
-import org.gradle.api.attributes.Usage
+import org.gradle.api.artifacts.Configuration
+import org.gradle.api.attributes.*
 import org.gradle.api.component.AdhocComponentWithVariants
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.plugins.JavaBasePlugin
@@ -99,40 +97,62 @@ class TapestryPlugin : Plugin<Project> {
     }
 
     fun createConfigurations(root: Project, plugins: List<LoaderPlugin>, component: AdhocComponentWithVariants) {
-        fun createProducerConfiguration(name: String, usage: String) =
+        fun createProducerConfiguration(name: String, usage: String, configure: Configuration.() -> Unit) =
             root.configurations.register(name) {
                 attributes.attribute(Usage.USAGE_ATTRIBUTE, root.objects.named(usage))
                 attributes.attribute(Category.CATEGORY_ATTRIBUTE, root.objects.named(Category.LIBRARY))
                 attributes.attribute(Bundling.BUNDLING_ATTRIBUTE, root.objects.named(Bundling.EXTERNAL))
 
-                outgoing.artifact(root.tasks.named("mergedJar"))
-                outgoing.artifact(root.tasks.named("mergedSourcesJar"))
+                configure.invoke(this)
 
                 isCanBeConsumed = true
                 isCanBeResolved = false
             }
 
         // Create a compile-time configuration that defaults to the merged jar.
-        val apiElements = createProducerConfiguration("tapestryApiElements", Usage.JAVA_API)
-        component.addVariantsFromConfiguration(apiElements.get()) {
-            mapToMavenScope("compile")
+        val apiElements = createProducerConfiguration("tapestryApiElements", Usage.JAVA_API) {
+            outgoing.artifact(root.tasks.named("mergedJar"))
+
+            component.addVariantsFromConfiguration(this) {
+                mapToMavenScope("compile")
+            }
+        }
+
+        val sourcesElements = createProducerConfiguration("tapestrySourcesElements", Usage.JAVA_RUNTIME) {
+            attributes.attribute(Category.CATEGORY_ATTRIBUTE, root.objects.named(Category.DOCUMENTATION))
+            attributes.attribute(DocsType.DOCS_TYPE_ATTRIBUTE, root.objects.named(DocsType.SOURCES))
+
+            outgoing.artifact(root.tasks.named("mergedSourcesJar"))
+
+            component.addVariantsFromConfiguration(this) {
+                mapToMavenScope("runtime")
+            }
         }
 
         // Then, for each platform, we create a variant with an attribute.
         fun addVariant(name: String, loaderPlugins: List<LoaderPlugin>) {
+            // FIXME: this breaks with multiple loader plugins.
             apiElements.configure {
                 outgoing.variants.create(name) {
                     attributes.attribute(PLATFORM_ATTRIBUTE, name.lowercase())
 
-                    // FIXME: this breaks with multiple loader plugins.
-                    loaderPlugins.forEach { plugin ->
-                        val jar = plugin.target.tasks.named("jar")
-                        artifact(jar) { classifier = name.lowercase() }
-
-                        plugin.target.tasks.findByName("sourcesJar")?.let { sources ->
-                            artifact(sources) { classifier = "${name.lowercase()}-sources" }
+                    loaderPlugins
+                        .mapNotNull { it.target.tasks.findByName("jar") }
+                        .forEach {
+                            artifact(it) { classifier = name.lowercase() }
                         }
-                    }
+                }
+            }
+
+            sourcesElements.configure {
+                outgoing.variants.create(name) {
+                    attributes.attribute(PLATFORM_ATTRIBUTE, name.lowercase())
+
+                    loaderPlugins
+                        .mapNotNull { it.target.tasks.findByName("sourcesJar") }
+                        .forEach {
+                            artifact(it) { classifier = "${name.lowercase()}-sources" }
+                        }
                 }
             }
         }
@@ -142,10 +162,14 @@ class TapestryPlugin : Plugin<Project> {
         addVariant("NeoForge", plugins.filterIsInstance<NeoForgePlugin>())
 
         // At runtime, we can just use the merged jar always.
-        val runtimeElements = createProducerConfiguration("tapestryRuntimeElements", Usage.JAVA_RUNTIME)
-        component.addVariantsFromConfiguration(runtimeElements.get()) {
-            mapToMavenScope("runtime")
+        createProducerConfiguration("tapestryRuntimeElements", Usage.JAVA_RUNTIME) {
+            outgoing.artifact(root.tasks.named("mergedJar"))
+
+            component.addVariantsFromConfiguration(this) {
+                mapToMavenScope("runtime")
+            }
         }
+
     }
 
     fun createMergedJarTask(
