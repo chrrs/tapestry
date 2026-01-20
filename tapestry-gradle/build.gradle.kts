@@ -7,7 +7,7 @@ plugins {
 group = "me.chrr.tapestry"
 version = gradle.parent!!.rootProject.property("plugin.version") as String
 
-java.toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+java.toolchain.languageVersion.set(JavaLanguageVersion.of(25))
 
 gradlePlugin {
     vcsUrl = "https://github.com/chrrs/tapestry"
@@ -30,8 +30,8 @@ dependencies {
     implementation("io.hotmoka:toml4j:0.7.3")
 
     fun plugin(id: String, version: String) = "$id:$id.gradle.plugin:$version"
-    implementation(plugin("net.fabricmc.fabric-loom", "1.14-SNAPSHOT"))
-    implementation(plugin("net.neoforged.moddev", "2.0.134"))
+    implementation(plugin("net.fabricmc.fabric-loom", "1.15.2"))
+    implementation(plugin("net.neoforged.moddev", "2.0.139"))
 }
 
 sourceSets {
