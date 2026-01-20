@@ -12,9 +12,11 @@ import org.gradle.api.component.AdhocComponentWithVariants
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.publish.internal.component.DefaultAdhocSoftwareComponent
-import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.jvm.tasks.Jar
-import org.gradle.kotlin.dsl.*
+import org.gradle.kotlin.dsl.attributes
+import org.gradle.kotlin.dsl.create
+import org.gradle.kotlin.dsl.named
+import org.gradle.kotlin.dsl.register
 
 val PLATFORM_ATTRIBUTE: Attribute<String> = Attribute.of("me.chrr.tapestry.platform", String::class.java)
 
@@ -49,7 +51,7 @@ class TapestryPlugin : Plugin<Project> {
 
             // Finally, we process all the loader subprojects.
             val plugins = applyLoaderPlugins(target, tapestry)
-            createMergedJarTask(target, plugins.map { it.target }, tapestry)
+            createMergedJarTask(target, plugins, tapestry)
             createConfigurations(target, plugins, component)
         }
     }
@@ -174,7 +176,7 @@ class TapestryPlugin : Plugin<Project> {
 
     fun createMergedJarTask(
         root: Project,
-        projects: List<Project>,
+        plugins: List<LoaderPlugin>,
         tapestry: TapestryExtension,
     ) {
         fun createTask(name: String, sources: Boolean) =
@@ -188,12 +190,12 @@ class TapestryPlugin : Plugin<Project> {
                 manifest.attributes("Tapestry-Merged-Jar" to "true")
                 duplicatesStrategy = DuplicatesStrategy.FAIL
 
-                val jar = projects.map { it.tasks.named("jar") }
+                val jar = plugins.map { it.target.tasks.named("jar") }
                 dependsOn(jar)
 
-                val paths = projects
-                    .map { it.the<SourceSetContainer>().getByName("main") }
-                    .map { if (sources) it.allSource else it.output }
+                val paths = plugins
+                    .flatMap { it.sourceSets }
+                    .map { set -> set.map { if (sources) it.allSource else it.output } }
                 from(paths)
             }
 

@@ -7,7 +7,6 @@ import me.chrr.tapestry.gradle.manifest.GenerateNeoForgeManifestTask
 import net.neoforged.moddevgradle.boot.ModDevPlugin
 import net.neoforged.moddevgradle.dsl.NeoForgeExtension
 import org.gradle.api.Project
-import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
@@ -15,7 +14,7 @@ import org.gradle.kotlin.dsl.the
 
 class NeoForgePlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(tapestry, target) {
     override fun applyLoaderPlugin() {
-        val java = super.applyJavaPlugin()
+        super.applyJavaPlugin()
         super.applyAnnotationProcessor()
         super.preferPlatformAttribute("neoforge")
 
@@ -23,8 +22,9 @@ class NeoForgePlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugi
         target.plugins.apply(ModDevPlugin::class.java)
         val neoForge = target.the<NeoForgeExtension>()
 
-        val main = java.sourceSets.getByName("main")
-        neoForge.mods.create(tapestry.info.id.get()).sourceSet(main)
+        neoForge.mods.create(tapestry.info.id.get()) {
+            sourceSets.forEach { sourceSet(it.get()) }
+        }
 
         neoForge.enable {
             version = tapestry.versions.neoforge.get()
@@ -67,12 +67,11 @@ class NeoForgePlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugi
     override fun addBuildDependency(other: LoaderPlugin) {
         target.dependencies.add("api", other.target)
 
-        val sourceSets = other.target.the<SourceSetContainer>()
-        target.tasks.named<Jar>("jar") { from(sourceSets.getByName("main").output) }
-        target.tasks.named<Jar>("sourcesJar") { from(sourceSets.getByName("main").allSource) }
+        target.tasks.named<Jar>("jar") { from(other.sourceSets.map { set -> set.map { it.output } }) }
+        target.tasks.named<Jar>("sourcesJar") { from(other.sourceSets.map { set -> set.map { it.allSource } }) }
 
         val neoForge = target.the<NeoForgeExtension>()
-        neoForge.mods.configureEach { sourceSet(sourceSets.getByName("main")) }
+        neoForge.mods.configureEach { other.sourceSets.forEach { sourceSet(it.get()) } }
 
         // FIXME: port over JiJ.
     }

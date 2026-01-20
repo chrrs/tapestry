@@ -10,6 +10,8 @@ import org.gradle.api.file.Directory
 import org.gradle.api.plugins.JavaLibraryPlugin
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.SourceSet
+import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.kotlin.dsl.the
 import java.nio.file.Files
@@ -18,7 +20,10 @@ import java.util.jar.JarFile
 import javax.inject.Inject
 
 abstract class LoaderPlugin(val tapestry: TapestryExtension, val target: Project) {
-    val generatedResourcesDir: Provider<Directory> = target.tapestryBuildDir.map { it.dir("generated") }
+    val generatedResourcesDir: Provider<Directory>
+            by lazy { target.tapestryBuildDir.map { it.dir("generated") } }
+    val sourceSets: List<Provider<SourceSet>>
+            by lazy { listOf(target.the<SourceSetContainer>().named("main")) }
 
     abstract fun applyLoaderPlugin()
     abstract fun addBuildDependency(other: LoaderPlugin)
@@ -33,7 +38,7 @@ abstract class LoaderPlugin(val tapestry: TapestryExtension, val target: Project
         val generateResources = target.tasks.register("generateResources")
         target.tasks.named("processResources") { dependsOn(generateResources) }
         target.tasks.named("sourcesJar") { dependsOn(generateResources) }
-        java.sourceSets.getByName("main").resources.srcDir(generatedResourcesDir)
+        sourceSets[0].get().resources.srcDir(generatedResourcesDir)
 
         return java
     }

@@ -7,7 +7,6 @@ import me.chrr.tapestry.gradle.manifest.GenerateFabricManifestTask
 import net.fabricmc.loom.LoomNoRemapGradlePlugin
 import net.fabricmc.loom.api.LoomGradleExtensionAPI
 import org.gradle.api.Project
-import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.maven
 import org.gradle.kotlin.dsl.named
@@ -16,7 +15,7 @@ import org.gradle.kotlin.dsl.the
 
 class FabricPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(tapestry, target) {
     override fun applyLoaderPlugin() {
-        val java = super.applyJavaPlugin()
+        super.applyJavaPlugin()
         super.applyAnnotationProcessor()
         super.preferPlatformAttribute("fabric")
 
@@ -24,8 +23,9 @@ class FabricPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(
         target.plugins.apply(LoomNoRemapGradlePlugin::class.java)
         val loom = target.the<LoomGradleExtensionAPI>()
 
-        val main = java.sourceSets.getByName("main")
-        loom.mods.create(tapestry.info.id.get()).sourceSet(main)
+        loom.mods.create(tapestry.info.id.get()) {
+            sourceSets.forEach { sourceSet(it.get()) }
+        }
 
         target.repositories.add(target.repositories.maven("https://maven.fabricmc.net/"))
         target.dependencies.add("minecraft", "com.mojang:minecraft:${tapestry.versions.minecraft.get()}")
@@ -70,12 +70,11 @@ class FabricPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(
     override fun addBuildDependency(other: LoaderPlugin) {
         target.dependencies.add("api", other.target)
 
-        val sourceSets = other.target.the<SourceSetContainer>()
-        target.tasks.named<Jar>("jar") { from(sourceSets.getByName("main").output) }
-        target.tasks.named<Jar>("sourcesJar") { from(sourceSets.getByName("main").allSource) }
+        target.tasks.named<Jar>("jar") { from(other.sourceSets.map { set -> set.map { it.output } }) }
+        target.tasks.named<Jar>("sourcesJar") { from(other.sourceSets.map { set -> set.map { it.allSource } }) }
 
         val loom = target.the<LoomGradleExtensionAPI>()
-        loom.mods.configureEach { sourceSet(sourceSets.getByName("main")) }
+        loom.mods.configureEach { other.sourceSets.forEach { sourceSet(it.get()) } }
 
         // FIXME: port over JiJ.
     }
