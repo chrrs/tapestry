@@ -49,10 +49,7 @@ class NeoForgePlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugi
             neoForge.runs {
                 if (tapestry.info.environment.get() != Environment.Server)
                     create("client") {
-                        ideFolderName.set(tapestry.info.name)
-                        ideName.set("NeoForge Client [${tapestry.info.id.get()}]")
-                        if (!tapestry.game.generateIdeConfig.get()) disableIdeRun()
-
+                        disableIdeRun()
                         tapestry.game.username.ifPresent { programArguments.addAll("--username", it) }
                         gameDirectory.set(tapestry.game.runDir)
                         client()
@@ -60,10 +57,7 @@ class NeoForgePlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugi
 
                 if (tapestry.info.environment.get() != Environment.Client)
                     create("server") {
-                        ideFolderName.set(tapestry.info.name)
-                        ideName.set("NeoForge Server [${tapestry.info.id.get()}]")
-                        if (!tapestry.game.generateIdeConfig.get()) disableIdeRun()
-
+                        disableIdeRun()
                         gameDirectory.set(tapestry.game.runDir.map { it.dir("server") })
                         server()
                     }

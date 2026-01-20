@@ -16,6 +16,7 @@ abstract class TapestryExtension(objects: ObjectFactory) {
     val versions = objects.newInstance<Versions>(objects)
     val projects = objects.newInstance<Projects>(objects)
     val info = objects.newInstance<Info>(objects)
+    val transform = objects.newInstance<Transform>(objects)
     val depends = objects.newInstance<Depends>(objects)
     val game = objects.newInstance<Game>(objects)
     val publish = objects.newInstance<Publish>(info, objects)
@@ -23,6 +24,7 @@ abstract class TapestryExtension(objects: ObjectFactory) {
     fun projects(f: Projects.() -> Unit) = projects.apply(f)
     fun versions(f: Versions.() -> Unit) = versions.apply(f)
     fun info(f: Info.() -> Unit) = info.apply(f)
+    fun transform(f: Transform.() -> Unit) = transform.apply(f)
     fun depends(f: Depends.() -> Unit) = depends.apply(f)
     fun game(f: Game.() -> Unit) = game.apply(f)
     fun publish(f: Publish.() -> Unit) = publish.apply(f)
@@ -73,6 +75,11 @@ abstract class TapestryExtension(objects: ObjectFactory) {
         val isLibrary = objects.property<Boolean>().apply { convention(false) }
     }
 
+    open class Transform @Inject constructor(objects: ObjectFactory) {
+        val classTweakers: ListProperty<String> = objects.listProperty<String>()
+        val mixinConfigs: ListProperty<String> = objects.listProperty<String>()
+    }
+
     open class Depends @Inject constructor(objects: ObjectFactory) {
         // FIXME: use this.
         val minecraft = objects.listProperty<String>()
@@ -81,7 +88,6 @@ abstract class TapestryExtension(objects: ObjectFactory) {
     open class Game @Inject constructor(objects: ObjectFactory) {
         val runDir: DirectoryProperty = objects.directoryProperty()
         val username = objects.property<String>()
-        val generateIdeConfig = objects.property<Boolean>().apply { convention(false) }
     }
 
     open class Publish @Inject constructor(private val info: Info, objects: ObjectFactory) {

@@ -51,11 +51,7 @@ class FabricPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(
             loom.runs {
                 if (tapestry.info.environment.get() != Environment.Server)
                     named("client") {
-                        ideConfigFolder.set(tapestry.info.name)
-                        configName = "Fabric Client [${tapestry.info.id.get()}]"
-                        appendProjectPathToConfigName.set(false)
-                        isIdeConfigGenerated = tapestry.game.generateIdeConfig.get()
-
+                        isIdeConfigGenerated = false
                         tapestry.game.username.ifPresent { programArgs("--username", it) }
                         runDir = relativeRunDir.path
                         environment = "client"
@@ -63,11 +59,7 @@ class FabricPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(
 
                 if (tapestry.info.environment.get() != Environment.Client)
                     named("server") {
-                        ideConfigFolder.set(tapestry.info.name)
-                        configName = "Fabric Server [${tapestry.info.id.get()}]"
-                        appendProjectPathToConfigName.set(false)
-                        isIdeConfigGenerated = tapestry.game.generateIdeConfig.get()
-
+                        isIdeConfigGenerated = false
                         runDir = relativeRunDir.path + "/server"
                         environment = "server"
                     }
