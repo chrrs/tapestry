@@ -10,7 +10,7 @@ import org.gradle.kotlin.dsl.property
 
 open class GenerateNeoForgeManifestTask : GenerateManifestTask() {
     @Internal
-    val info = project.objects.property<TapestryExtension.Info>()
+    val tapestry = project.objects.property<TapestryExtension>()
 
     @OutputFile
     val outputFile: RegularFileProperty = project.objects.fileProperty()
@@ -19,7 +19,8 @@ open class GenerateNeoForgeManifestTask : GenerateManifestTask() {
         if (ctx.fabricEntrypoints.isNotEmpty())
             throw IllegalStateException("@FabricEntrypoint can only be used for Fabric targets.")
 
-        val info = info.get()
+        val info = tapestry.get().info
+
         val toml = mutableMapOf<String, Any>().apply {
             this["modLoader"] = "javafml"
             this["loaderVersion"] = "[1,)"

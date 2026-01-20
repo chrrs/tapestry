@@ -14,16 +14,17 @@ import org.gradle.kotlin.dsl.the
 
 class NeoForgePlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(tapestry, target) {
     override fun applyLoaderPlugin() {
-        super.applyJavaPlugin()
-        super.applyAnnotationProcessor()
+        super.applyJavaPlugin("neoforge")
         super.preferPlatformAttribute("neoforge")
+        super.applyAnnotationProcessor()
 
         // Apply ModDevGradle to build the mod.
         target.plugins.apply(ModDevPlugin::class.java)
         val neoForge = target.the<NeoForgeExtension>()
 
-        neoForge.mods.create(tapestry.info.id.get()) {
-            sourceSets.forEach { sourceSet(it.get()) }
+        neoForge.mods.register(tapestry.info.id.get()) {
+            ownSourceSets.forEach { sourceSet(it.get()) }
+            otherSourceSets.forEach { sourceSet(it.get()) }
         }
 
         neoForge.enable {
@@ -31,18 +32,17 @@ class NeoForgePlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugi
             isDisableRecompilation = tapestry.isCI()
         }
 
+        // Convert any class tweakers to access transformers, and register them.
+        super.createAccessTransformerTask().also {
+            neoForge.accessTransformers.from(it)
+            super.copyGeneratedResources(target.files(it))
+        }
+
         // Automatically generate neoforge.mods.toml from tapestry extension.
-        val generateManifest = target.tasks.register<GenerateNeoForgeManifestTask>("generateNeoForgeModsToml") {
-            info.set(tapestry.info)
+        target.tasks.register<GenerateNeoForgeManifestTask>("generateNeoForgeModsToml") {
+            tapestry.set(this@NeoForgePlugin.tapestry)
             outputFile.set(generatedResourcesDir.map { it.dir("META-INF").file("neoforge.mods.toml") })
-        }
-
-        target.tasks.named("generateResources") { dependsOn(generateManifest) }
-
-        // Make sure the JAR file is named correctly.
-        target.tasks.named<Jar>("jar") {
-            tapestry.applyArchiveName(this, "neoforge")
-        }
+        }.also { super.copyGeneratedResources(target.files(it)) }
 
         // Generate run configurations.
         if (!tapestry.isCI())
@@ -67,11 +67,9 @@ class NeoForgePlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugi
     override fun addBuildDependency(other: LoaderPlugin) {
         target.dependencies.add("api", other.target)
 
-        target.tasks.named<Jar>("jar") { from(other.sourceSets.map { set -> set.map { it.output } }) }
-        target.tasks.named<Jar>("sourcesJar") { from(other.sourceSets.map { set -> set.map { it.allSource } }) }
-
-        val neoForge = target.the<NeoForgeExtension>()
-        neoForge.mods.configureEach { other.sourceSets.forEach { sourceSet(it.get()) } }
+        target.tasks.named<Jar>("jar") { from(other.ownSourceSets.map { set -> set.map { it.output } }) }
+        target.tasks.named<Jar>("sourcesJar") { from(other.ownSourceSets.map { set -> set.map { it.allSource } }) }
+        otherSourceSets.addAll(other.ownSourceSets)
 
         // FIXME: port over JiJ.
     }

@@ -2,18 +2,26 @@ package me.chrr.tapestry.gradle.loader
 
 import me.chrr.tapestry.gradle.PLATFORM_ATTRIBUTE
 import me.chrr.tapestry.gradle.TapestryExtension
+import me.chrr.tapestry.gradle.classtweaker.ConvertClassTweakersTask
 import me.chrr.tapestry.gradle.tapestryBuildDir
 import org.gradle.api.Project
 import org.gradle.api.attributes.AttributeDisambiguationRule
 import org.gradle.api.attributes.MultipleCandidatesDetails
 import org.gradle.api.file.Directory
+import org.gradle.api.file.DuplicatesStrategy
+import org.gradle.api.file.FileCollection
 import org.gradle.api.plugins.JavaLibraryPlugin
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.jvm.tasks.Jar
 import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.gradle.kotlin.dsl.named
+import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.the
+import org.gradle.language.jvm.tasks.ProcessResources
+import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.jar.JarFile
@@ -22,23 +30,23 @@ import javax.inject.Inject
 abstract class LoaderPlugin(val tapestry: TapestryExtension, val target: Project) {
     val generatedResourcesDir: Provider<Directory>
             by lazy { target.tapestryBuildDir.map { it.dir("generated") } }
-    val sourceSets: List<Provider<SourceSet>>
+
+    val ownSourceSets: List<Provider<SourceSet>>
             by lazy { listOf(target.the<SourceSetContainer>().named("main")) }
+    val otherSourceSets = mutableListOf<Provider<SourceSet>>()
 
     abstract fun applyLoaderPlugin()
     abstract fun addBuildDependency(other: LoaderPlugin)
 
-    fun applyJavaPlugin(): JavaPluginExtension {
+    fun applyJavaPlugin(appendix: String): JavaPluginExtension {
         target.plugins.apply(JavaLibraryPlugin::class.java)
         val java = target.the<JavaPluginExtension>()
         java.toolchain.languageVersion.set(JavaLanguageVersion.of(25))
         java.withSourcesJar()
 
-        // Set up resource generation.
-        val generateResources = target.tasks.register("generateResources")
-        target.tasks.named("processResources") { dependsOn(generateResources) }
-        target.tasks.named("sourcesJar") { dependsOn(generateResources) }
-        sourceSets[0].get().resources.srcDir(generatedResourcesDir)
+        // Properly set JAR names.
+        target.tasks.named<Jar>("jar") { tapestry.applyArchiveName(this, appendix) }
+        target.tasks.named<Jar>("sourcesJar") { tapestry.applyArchiveName(this, appendix) }
 
         return java
     }
@@ -92,6 +100,34 @@ abstract class LoaderPlugin(val tapestry: TapestryExtension, val target: Project
                         }
                     }
             }
+        }
+    }
+
+    fun createAccessTransformerTask() =
+        target.tasks.register<ConvertClassTweakersTask>("convertClassTweaker") {
+            if (tapestry.transform.classTweaker.isPresent) {
+                inputFiles.add(findResource(tapestry.transform.classTweaker))
+                outputFiles.add(generatedResourcesDir.map { it.file("META-INF/accesstransformer.cfg").asFile })
+            }
+        }
+
+    fun findResource(name: Provider<String>): Provider<File> = name.map { name ->
+        listOf(ownSourceSets, otherSourceSets).flatten().map { it.get() }
+            .flatMap { it.resources.matching { include(name) } }
+            .find { it.isFile }
+    }
+
+    fun copyGeneratedResources(files: FileCollection) {
+        target.tasks.named<ProcessResources>("processResources") {
+            val names = files.map { it.relativeTo(generatedResourcesDir.get().asFile).path }
+
+            if (names.isNotEmpty())
+                from(generatedResourcesDir) {
+                    include(names)
+                    duplicatesStrategy = DuplicatesStrategy.FAIL
+                }
+
+            dependsOn(files)
         }
     }
 }

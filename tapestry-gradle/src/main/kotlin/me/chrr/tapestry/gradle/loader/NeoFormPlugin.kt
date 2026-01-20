@@ -4,13 +4,11 @@ import me.chrr.tapestry.gradle.TapestryExtension
 import net.neoforged.moddevgradle.boot.ModDevPlugin
 import net.neoforged.moddevgradle.dsl.NeoForgeExtension
 import org.gradle.api.Project
-import org.gradle.jvm.tasks.Jar
-import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.the
 
 class NeoFormPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(tapestry, target) {
     override fun applyLoaderPlugin() {
-        super.applyJavaPlugin()
+        super.applyJavaPlugin("common")
         super.preferPlatformAttribute("common")
 
         val minecraft = tapestry.versions.minecraft.get()
@@ -28,10 +26,9 @@ class NeoFormPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin
             isDisableRecompilation = tapestry.isCI()
         }
 
-        // Make sure the JAR file is named correctly.
-        target.tasks.named<Jar>("jar") {
-            tapestry.applyArchiveName(this, "common")
-        }
+        // Convert any class tweakers to access transformers, and register them.
+        val convertClassTweakers = super.createAccessTransformerTask()
+        neoForge.accessTransformers.from(convertClassTweakers)
     }
 
     override fun addBuildDependency(other: LoaderPlugin) =

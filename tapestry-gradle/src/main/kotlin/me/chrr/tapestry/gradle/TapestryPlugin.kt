@@ -194,7 +194,7 @@ class TapestryPlugin : Plugin<Project> {
                 dependsOn(jar)
 
                 val paths = plugins
-                    .flatMap { it.sourceSets }
+                    .flatMap { it.ownSourceSets }
                     .map { set -> set.map { if (sources) it.allSource else it.output } }
                 from(paths)
             }

@@ -76,7 +76,7 @@ abstract class TapestryExtension(objects: ObjectFactory) {
     }
 
     open class Transform @Inject constructor(objects: ObjectFactory) {
-        val classTweakers: ListProperty<String> = objects.listProperty<String>()
+        val classTweaker = objects.property<String>()
         val mixinConfigs: ListProperty<String> = objects.listProperty<String>()
     }
 

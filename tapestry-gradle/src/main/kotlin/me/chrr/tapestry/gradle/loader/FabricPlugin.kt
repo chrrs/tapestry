@@ -15,34 +15,31 @@ import org.gradle.kotlin.dsl.the
 
 class FabricPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(tapestry, target) {
     override fun applyLoaderPlugin() {
-        super.applyJavaPlugin()
-        super.applyAnnotationProcessor()
+        super.applyJavaPlugin("fabric")
         super.preferPlatformAttribute("fabric")
+        super.applyAnnotationProcessor()
 
         // Apply Fabric Loom to build the mod.
         target.plugins.apply(LoomNoRemapGradlePlugin::class.java)
         val loom = target.the<LoomGradleExtensionAPI>()
 
         loom.mods.create(tapestry.info.id.get()) {
-            sourceSets.forEach { sourceSet(it.get()) }
+            ownSourceSets.forEach { sourceSet(it.get()) }
+            otherSourceSets.forEach { sourceSet(it.get()) }
         }
 
         target.repositories.add(target.repositories.maven("https://maven.fabricmc.net/"))
         target.dependencies.add("minecraft", "com.mojang:minecraft:${tapestry.versions.minecraft.get()}")
         target.dependencies.add("implementation", "net.fabricmc:fabric-loader:${tapestry.versions.fabricLoader.get()}")
 
+        // Register the class tweaker specified in the tapestry extension.
+        loom.accessWidenerPath.set(target.layout.file(super.findResource(tapestry.transform.classTweaker)))
+
         // Automatically generate fabric.mod.json from tapestry extension.
-        val generateManifest = target.tasks.register<GenerateFabricManifestTask>("generateFabricModJson") {
-            info.set(tapestry.info)
+        target.tasks.register<GenerateFabricManifestTask>("generateFabricModJson") {
+            tapestry.set(this@FabricPlugin.tapestry)
             outputFile.set(generatedResourcesDir.map { it.file("fabric.mod.json") })
-        }
-
-        target.tasks.named("generateResources") { dependsOn(generateManifest) }
-
-        // Make sure the JAR file is named correctly.
-        target.tasks.named<Jar>("jar") {
-            tapestry.applyArchiveName(this, "fabric")
-        }
+        }.also { super.copyGeneratedResources(target.files(it)) }
 
         // Generate run configurations.
         if (!tapestry.isCI()) {
@@ -70,11 +67,9 @@ class FabricPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(
     override fun addBuildDependency(other: LoaderPlugin) {
         target.dependencies.add("api", other.target)
 
-        target.tasks.named<Jar>("jar") { from(other.sourceSets.map { set -> set.map { it.output } }) }
-        target.tasks.named<Jar>("sourcesJar") { from(other.sourceSets.map { set -> set.map { it.allSource } }) }
-
-        val loom = target.the<LoomGradleExtensionAPI>()
-        loom.mods.configureEach { other.sourceSets.forEach { sourceSet(it.get()) } }
+        target.tasks.named<Jar>("jar") { from(other.ownSourceSets.map { set -> set.map { it.output } }) }
+        target.tasks.named<Jar>("sourcesJar") { from(other.ownSourceSets.map { set -> set.map { it.allSource } }) }
+        otherSourceSets.addAll(other.ownSourceSets)
 
         // FIXME: port over JiJ.
     }

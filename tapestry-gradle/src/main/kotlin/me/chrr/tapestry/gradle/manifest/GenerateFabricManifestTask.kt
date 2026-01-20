@@ -12,13 +12,15 @@ import org.gradle.kotlin.dsl.property
 
 open class GenerateFabricManifestTask : GenerateManifestTask() {
     @Internal
-    val info = project.objects.property<TapestryExtension.Info>()
+    val tapestry = project.objects.property<TapestryExtension>()
 
     @OutputFile
     val outputFile: RegularFileProperty = project.objects.fileProperty()
 
     override fun generateManifest(ctx: Context) {
-        val info = info.get()
+        val info = tapestry.get().info
+        val transform = tapestry.get().transform
+
         val json = JsonObject().apply {
             addProperty("schemaVersion", 1)
 
@@ -72,7 +74,8 @@ open class GenerateFabricManifestTask : GenerateManifestTask() {
                 })
 
             // FIXME: mixins
-            // FIXME: accesswidener
+
+            transform.classTweaker.ifPresent { addProperty("accessWidener", it) }
 
             add("depends", JsonObject().apply {
                 // FIXME: set the minecraft dependency properly.
