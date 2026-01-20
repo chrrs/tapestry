@@ -6,8 +6,10 @@ import me.chrr.tapestry.gradle.tapestryBuildDir
 import org.gradle.api.Project
 import org.gradle.api.attributes.AttributeDisambiguationRule
 import org.gradle.api.attributes.MultipleCandidatesDetails
+import org.gradle.api.file.Directory
 import org.gradle.api.plugins.JavaLibraryPlugin
 import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.api.provider.Provider
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.kotlin.dsl.the
 import java.nio.file.Files
@@ -16,6 +18,8 @@ import java.util.jar.JarFile
 import javax.inject.Inject
 
 abstract class LoaderPlugin(val tapestry: TapestryExtension, val target: Project) {
+    val generatedResourcesDir: Provider<Directory> = target.tapestryBuildDir.map { it.dir("generated") }
+
     abstract fun applyLoaderPlugin()
     abstract fun addBuildDependency(other: LoaderPlugin)
 
@@ -25,10 +29,11 @@ abstract class LoaderPlugin(val tapestry: TapestryExtension, val target: Project
         java.toolchain.languageVersion.set(JavaLanguageVersion.of(25))
         java.withSourcesJar()
 
-        // Include any generated sources in the final build.
-        java.sourceSets.getByName("main").resources
-            .srcDir(target.tapestryBuildDir.map { it.dir("generated") })
-        target.tasks.named("sourcesJar") { dependsOn(target.tasks.named("processResources")) }
+        // Set up resource generation.
+        val generateResources = target.tasks.register("generateResources")
+        target.tasks.named("processResources") { dependsOn(generateResources) }
+        target.tasks.named("sourcesJar") { dependsOn(generateResources) }
+        java.sourceSets.getByName("main").resources.srcDir(generatedResourcesDir)
 
         return java
     }
@@ -84,9 +89,4 @@ abstract class LoaderPlugin(val tapestry: TapestryExtension, val target: Project
             }
         }
     }
-}
-
-enum class Loader {
-    Fabric,
-    NeoForge,
 }

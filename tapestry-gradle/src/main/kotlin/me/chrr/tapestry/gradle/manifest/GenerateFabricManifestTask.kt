@@ -3,11 +3,22 @@ package me.chrr.tapestry.gradle.manifest
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import me.chrr.tapestry.gradle.TapestryExtension
 import me.chrr.tapestry.gradle.ifPresent
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.OutputFile
+import org.gradle.kotlin.dsl.property
 
-object FabricManifest {
-    fun generate(ctx: ManifestContext): String {
-        val info = ctx.tapestry.info
+open class GenerateFabricManifestTask : GenerateManifestTask() {
+    @Internal
+    val info = project.objects.property<TapestryExtension.Info>()
+
+    @OutputFile
+    val outputFile: RegularFileProperty = project.objects.fileProperty()
+
+    override fun generateManifest(ctx: Context) {
+        val info = info.get()
         val json = JsonObject().apply {
             addProperty("schemaVersion", 1)
 
@@ -71,7 +82,9 @@ object FabricManifest {
             })
         }
 
-        return Gson().toJson(json)
+        val file = outputFile.get().asFile
+        file.parentFile.mkdirs()
+        file.writeText(Gson().toJson(json))
     }
 
     private fun gsonArray(list: List<String>): JsonArray {

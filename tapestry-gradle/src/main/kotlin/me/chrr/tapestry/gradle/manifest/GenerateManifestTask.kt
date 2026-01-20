@@ -1,62 +1,31 @@
 package me.chrr.tapestry.gradle.manifest
 
-import me.chrr.tapestry.gradle.TapestryExtension
-import me.chrr.tapestry.gradle.loader.Loader
-import me.chrr.tapestry.gradle.tapestryBuildDir
 import org.gradle.api.DefaultTask
-import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskAction
 import org.gradle.kotlin.dsl.the
 import java.io.File
-import java.nio.file.Files
-import javax.inject.Inject
 
-abstract class GenerateManifestTask @Inject constructor(
-    private val tapestry: TapestryExtension,
-    private val loader: Loader,
-) : DefaultTask() {
-    @OutputFile
-    val outputFile: RegularFileProperty = project.objects.fileProperty()
-
-    private val entrypoints = mutableMapOf<String, MutableList<String>>()
-    private val platforms = mutableMapOf<String, MutableList<String>>()
-
+abstract class GenerateManifestTask : DefaultTask() {
     init {
-        // Read the output of the annotation processor.
-        dependsOn(project.tasks.named("compileJava") {
-            doLast {
-                val sourceSets = project.the<SourceSetContainer>()
-                for (sourceDir in sourceSets.flatMap { it.output.generatedSourcesDirs }) {
-                    val tapestryDir = sourceDir.resolve("tapestry")
-                    readPairsToMap(tapestryDir.resolve("entrypoints.txt"), entrypoints)
-                    readPairsToMap(tapestryDir.resolve("platforms.txt"), platforms)
-                }
-            }
-        })
-
-        // Set our output file to the right path depending on loader.
-        outputFile.convention(project.tapestryBuildDir.map {
-            when (loader) {
-                Loader.Fabric -> it.file("generated/fabric.mod.json")
-                Loader.NeoForge -> it.file("generated/META-INF/neoforge.mods.toml")
-            }
-        })
+        dependsOn("compileJava")
     }
 
     @TaskAction
     fun generate() {
-        val ctx = ManifestContext(tapestry, entrypoints, platforms)
+        // Read the output of the annotation processor.
+        val fabricEntrypoints = mutableMapOf<String, MutableList<String>>()
+        val platformImplementations = mutableMapOf<String, MutableList<String>>()
 
-        val manifest = when (loader) {
-            Loader.Fabric -> FabricManifest.generate(ctx)
-            Loader.NeoForge -> NeoForgeManifest.generate(ctx)
+        val sourceSets = project.the<SourceSetContainer>()
+        for (sourceDir in sourceSets.flatMap { it.output.generatedSourcesDirs }) {
+            val tapestryDir = sourceDir.resolve("tapestry")
+            readPairsToMap(tapestryDir.resolve("entrypoints.txt"), fabricEntrypoints)
+            readPairsToMap(tapestryDir.resolve("platforms.txt"), platformImplementations)
         }
 
-        val file = outputFile.get().asFile
-        file.parentFile.mkdirs()
-        Files.write(file.toPath(), manifest.toByteArray())
+        // Actually generate the manifest.
+        generateManifest(Context(fabricEntrypoints, platformImplementations))
     }
 
     private fun readPairsToMap(file: File, map: MutableMap<String, MutableList<String>>) {
@@ -69,4 +38,11 @@ abstract class GenerateManifestTask @Inject constructor(
                 map.getOrPut(key) { mutableListOf() }.add(value)
         }
     }
+
+    protected abstract fun generateManifest(ctx: Context)
+
+    data class Context(
+        val fabricEntrypoints: Map<String, List<String>>,
+        val platformImplementations: Map<String, List<String>>,
+    )
 }

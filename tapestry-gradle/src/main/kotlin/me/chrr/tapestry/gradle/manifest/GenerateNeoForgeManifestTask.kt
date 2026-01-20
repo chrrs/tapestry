@@ -1,14 +1,25 @@
 package me.chrr.tapestry.gradle.manifest
 
 import com.moandjiezana.toml.TomlWriter
+import me.chrr.tapestry.gradle.TapestryExtension
 import me.chrr.tapestry.gradle.ifPresent
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.OutputFile
+import org.gradle.kotlin.dsl.property
 
-object NeoForgeManifest {
-    fun generate(ctx: ManifestContext): String {
+open class GenerateNeoForgeManifestTask : GenerateManifestTask() {
+    @Internal
+    val info = project.objects.property<TapestryExtension.Info>()
+
+    @OutputFile
+    val outputFile: RegularFileProperty = project.objects.fileProperty()
+
+    override fun generateManifest(ctx: Context) {
         if (ctx.fabricEntrypoints.isNotEmpty())
             throw IllegalStateException("@FabricEntrypoint can only be used for Fabric targets.")
 
-        val info = ctx.tapestry.info
+        val info = info.get()
         val toml = mutableMapOf<String, Any>().apply {
             this["modLoader"] = "javafml"
             this["loaderVersion"] = "[1,)"
@@ -65,6 +76,8 @@ object NeoForgeManifest {
                 )
         }
 
-        return TomlWriter().write(toml)
+        val file = outputFile.get().asFile
+        file.parentFile.mkdirs()
+        file.writeText(TomlWriter().write(toml))
     }
 }

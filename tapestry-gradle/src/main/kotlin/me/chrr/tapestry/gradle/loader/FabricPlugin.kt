@@ -3,7 +3,7 @@ package me.chrr.tapestry.gradle.loader
 import me.chrr.tapestry.gradle.Environment
 import me.chrr.tapestry.gradle.TapestryExtension
 import me.chrr.tapestry.gradle.ifPresent
-import me.chrr.tapestry.gradle.manifest.GenerateManifestTask
+import me.chrr.tapestry.gradle.manifest.GenerateFabricManifestTask
 import net.fabricmc.loom.LoomNoRemapGradlePlugin
 import net.fabricmc.loom.api.LoomGradleExtensionAPI
 import org.gradle.api.Project
@@ -31,12 +31,13 @@ class FabricPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(
         target.dependencies.add("minecraft", "com.mojang:minecraft:${tapestry.versions.minecraft.get()}")
         target.dependencies.add("implementation", "net.fabricmc:fabric-loader:${tapestry.versions.fabricLoader.get()}")
 
-        // Generate fabric.mod.json when processing resources.
-        val generateManifest = target.tasks.register<GenerateManifestTask>(
-            "generateFabricModJson", tapestry, Loader.Fabric
-        )
+        // Automatically generate fabric.mod.json from tapestry extension.
+        val generateManifest = target.tasks.register<GenerateFabricManifestTask>("generateFabricModJson") {
+            info.set(tapestry.info)
+            outputFile.set(generatedResourcesDir.map { it.file("fabric.mod.json") })
+        }
 
-        target.tasks.named("processResources") { dependsOn(generateManifest) }
+        target.tasks.named("generateResources") { dependsOn(generateManifest) }
 
         // Make sure the JAR file is named correctly.
         target.tasks.named<Jar>("jar") {

@@ -3,7 +3,7 @@ package me.chrr.tapestry.gradle.loader
 import me.chrr.tapestry.gradle.Environment
 import me.chrr.tapestry.gradle.TapestryExtension
 import me.chrr.tapestry.gradle.ifPresent
-import me.chrr.tapestry.gradle.manifest.GenerateManifestTask
+import me.chrr.tapestry.gradle.manifest.GenerateNeoForgeManifestTask
 import net.neoforged.moddevgradle.boot.ModDevPlugin
 import net.neoforged.moddevgradle.dsl.NeoForgeExtension
 import org.gradle.api.Project
@@ -31,12 +31,13 @@ class NeoForgePlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugi
             isDisableRecompilation = tapestry.isCI()
         }
 
-        // Generate neoforge.mods.toml when processing resources.
-        val generateManifest = target.tasks.register<GenerateManifestTask>(
-            "generateNeoForgeModsToml", tapestry, Loader.NeoForge
-        )
+        // Automatically generate neoforge.mods.toml from tapestry extension.
+        val generateManifest = target.tasks.register<GenerateNeoForgeManifestTask>("generateNeoForgeModsToml") {
+            info.set(tapestry.info)
+            outputFile.set(generatedResourcesDir.map { it.dir("META-INF").file("neoforge.mods.toml") })
+        }
 
-        target.tasks.named("processResources") { dependsOn(generateManifest) }
+        target.tasks.named("generateResources") { dependsOn(generateManifest) }
 
         // Make sure the JAR file is named correctly.
         target.tasks.named<Jar>("jar") {
