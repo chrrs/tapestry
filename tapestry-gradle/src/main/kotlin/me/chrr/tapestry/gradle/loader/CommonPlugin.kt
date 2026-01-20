@@ -1,12 +1,13 @@
 package me.chrr.tapestry.gradle.loader
 
 import me.chrr.tapestry.gradle.TapestryExtension
+import net.fabricmc.loom.LoomCompanionGradlePlugin
 import net.neoforged.moddevgradle.boot.ModDevPlugin
 import net.neoforged.moddevgradle.dsl.NeoForgeExtension
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.the
 
-class NeoFormPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(tapestry, target) {
+class CommonPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(tapestry, target) {
     override fun applyLoaderPlugin() {
         super.applyJavaPlugin("common")
         super.preferPlatformAttribute("common")
@@ -16,6 +17,9 @@ class NeoFormPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin
 
         if (!neoForm.startsWith(minecraft))
             throw IllegalArgumentException("NeoForm $neoForm is incompatible with Minecraft $minecraft.")
+
+        // Apply the Loom Companion plugin, so Loom can use the sources.
+        target.plugins.apply(LoomCompanionGradlePlugin::class.java)
 
         // Apply ModDevGradle in Vanilla mode to put Minecraft on the classpath.
         target.plugins.apply(ModDevPlugin::class.java)

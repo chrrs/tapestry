@@ -3,7 +3,7 @@ package me.chrr.tapestry.gradle
 import me.chrr.tapestry.gradle.loader.FabricPlugin
 import me.chrr.tapestry.gradle.loader.LoaderPlugin
 import me.chrr.tapestry.gradle.loader.NeoForgePlugin
-import me.chrr.tapestry.gradle.loader.NeoFormPlugin
+import me.chrr.tapestry.gradle.loader.CommonPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
@@ -72,7 +72,7 @@ class TapestryPlugin : Plugin<Project> {
 
         // Create NeoForm plugin for all common projects.
         val common = tapestry.projects.common.getPresentOr { listOf(target.project("common")) }
-        val commonPlugins = common.map { NeoFormPlugin(tapestry, it) }
+        val commonPlugins = common.map { CommonPlugin(tapestry, it) }
 
         // Create loader-specific plugin for all loader projects.
         val loaderPlugins = mutableListOf<LoaderPlugin>()
@@ -135,7 +135,7 @@ class TapestryPlugin : Plugin<Project> {
         fun addVariant(name: String, loaderPlugins: List<LoaderPlugin>) {
             // FIXME: this breaks with multiple loader plugins.
             apiElements.configure {
-                outgoing.variants.create(name) {
+                outgoing.variants.register(name) {
                     attributes.attribute(PLATFORM_ATTRIBUTE, name.lowercase())
 
                     loaderPlugins
@@ -147,7 +147,7 @@ class TapestryPlugin : Plugin<Project> {
             }
 
             sourcesElements.configure {
-                outgoing.variants.create(name) {
+                outgoing.variants.register(name) {
                     attributes.attribute(PLATFORM_ATTRIBUTE, name.lowercase())
 
                     loaderPlugins
@@ -159,7 +159,7 @@ class TapestryPlugin : Plugin<Project> {
             }
         }
 
-        addVariant("Common", plugins.filterIsInstance<NeoFormPlugin>())
+        addVariant("Common", plugins.filterIsInstance<CommonPlugin>())
         addVariant("Fabric", plugins.filterIsInstance<FabricPlugin>())
         addVariant("NeoForge", plugins.filterIsInstance<NeoForgePlugin>())
 

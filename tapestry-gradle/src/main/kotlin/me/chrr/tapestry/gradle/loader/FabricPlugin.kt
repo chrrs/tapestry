@@ -23,7 +23,7 @@ class FabricPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(
         target.plugins.apply(LoomNoRemapGradlePlugin::class.java)
         val loom = target.the<LoomGradleExtensionAPI>()
 
-        loom.mods.create(tapestry.info.id.get()) {
+        loom.mods.register(tapestry.info.id.get()) {
             ownSourceSets.forEach { sourceSet(it.get()) }
             otherSourceSets.forEach { sourceSet(it.get()) }
         }

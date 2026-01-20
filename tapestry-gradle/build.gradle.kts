@@ -12,7 +12,7 @@ java.toolchain.languageVersion.set(JavaLanguageVersion.of(25))
 gradlePlugin {
     vcsUrl = "https://github.com/chrrs/tapestry"
 
-    plugins.create("me.chrr.tapestry.gradle") {
+    plugins.register("me.chrr.tapestry.gradle") {
         id = "me.chrr.tapestry.gradle"
         displayName = "Tapestry Gradle"
         implementationClass = "me.chrr.tapestry.gradle.TapestryPlugin"
