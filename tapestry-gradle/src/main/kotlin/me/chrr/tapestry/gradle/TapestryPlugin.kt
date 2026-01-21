@@ -92,7 +92,7 @@ class TapestryPlugin : Plugin<Project> {
         // Apply the loader plugins and depend on the common projects.
         for (plugin in loaderPlugins) {
             plugin.applyLoaderPlugin()
-            commonPlugins.forEach { plugin.addBuildDependency(it) }
+            commonPlugins.forEach { plugin.addPluginDependency(it) }
         }
 
         return listOf(commonPlugins, loaderPlugins).flatten()

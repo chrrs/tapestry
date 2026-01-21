@@ -7,9 +7,7 @@ import me.chrr.tapestry.gradle.manifest.GenerateFabricManifestTask
 import net.fabricmc.loom.LoomNoRemapGradlePlugin
 import net.fabricmc.loom.api.LoomGradleExtensionAPI
 import org.gradle.api.Project
-import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.maven
-import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.the
 
@@ -31,6 +29,11 @@ class FabricPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(
         target.repositories.add(target.repositories.maven("https://maven.fabricmc.net/"))
         target.dependencies.add("minecraft", "com.mojang:minecraft:${tapestry.versions.minecraft.get()}")
         target.dependencies.add("implementation", "net.fabricmc:fabric-loader:${tapestry.versions.fabricLoader.get()}")
+
+        // Include any dependencies in the JiJ configuration.
+        target.configurations.named("include") {
+            dependencies.addAllLater(target.configurations.named("jij").map { it.incoming.dependencies })
+        }
 
         // Register the class tweaker specified in the tapestry extension.
         loom.accessWidenerPath.set(target.layout.file(super.findResource(tapestry.transform.classTweaker)))
@@ -62,15 +65,5 @@ class FabricPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(
                     }
             }
         }
-    }
-
-    override fun addBuildDependency(other: LoaderPlugin) {
-        target.dependencies.add("api", other.target)
-
-        target.tasks.named<Jar>("jar") { from(other.ownSourceSets.map { set -> set.map { it.output } }) }
-        target.tasks.named<Jar>("sourcesJar") { from(other.ownSourceSets.map { set -> set.map { it.allSource } }) }
-        otherSourceSets.addAll(other.ownSourceSets)
-
-        // FIXME: port over JiJ.
     }
 }

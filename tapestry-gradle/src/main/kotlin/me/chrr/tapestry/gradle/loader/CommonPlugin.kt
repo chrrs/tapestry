@@ -35,6 +35,6 @@ class CommonPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(
         neoForge.accessTransformers.from(convertClassTweakers)
     }
 
-    override fun addBuildDependency(other: LoaderPlugin) =
+    override fun addPluginDependency(other: LoaderPlugin) =
         throw IllegalStateException("NeoForm (common) projects shouldn't depend on other projects.")
 }

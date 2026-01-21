@@ -36,7 +36,6 @@ abstract class LoaderPlugin(val tapestry: TapestryExtension, val target: Project
     val otherSourceSets = mutableListOf<Provider<SourceSet>>()
 
     abstract fun applyLoaderPlugin()
-    abstract fun addBuildDependency(other: LoaderPlugin)
 
     fun applyJavaPlugin(appendix: String): JavaPluginExtension {
         target.plugins.apply(JavaLibraryPlugin::class.java)
@@ -44,11 +43,31 @@ abstract class LoaderPlugin(val tapestry: TapestryExtension, val target: Project
         java.toolchain.languageVersion.set(JavaLanguageVersion.of(25))
         java.withSourcesJar()
 
+        // Create a JiJ configuration.
+        target.configurations.register("jij")
+
         // Properly set JAR names.
         target.tasks.named<Jar>("jar") { tapestry.applyArchiveName(this, appendix) }
         target.tasks.named<Jar>("sourcesJar") { tapestry.applyArchiveName(this, appendix) }
 
         return java
+    }
+
+    open fun addPluginDependency(other: LoaderPlugin) {
+        // Make classpath available at compile time, runtime and transitively.
+        target.dependencies.add("api", other.target)
+
+        // Shadow the sources from the plugin into all the jars.
+        target.tasks.named<Jar>("jar") { from(other.ownSourceSets.map { set -> set.map { it.output } }) }
+        target.tasks.named<Jar>("sourcesJar") { from(other.ownSourceSets.map { set -> set.map { it.allSource } }) }
+        otherSourceSets.addAll(other.ownSourceSets)
+
+        // Copy any JiJ declarations over to this project. Since declarations are only resolved
+        // after they're already added here, we still have the benefit of selecting the right
+        // loader JAR when we're dealing with Tapestry merged JARs.
+        target.configurations.named("jij") {
+            dependencies.addAllLater(other.target.configurations.named("jij").map { it.incoming.dependencies })
+        }
     }
 
     fun applyAnnotationProcessor() {

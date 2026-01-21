@@ -7,8 +7,6 @@ import me.chrr.tapestry.gradle.manifest.GenerateNeoForgeManifestTask
 import net.neoforged.moddevgradle.boot.ModDevPlugin
 import net.neoforged.moddevgradle.dsl.NeoForgeExtension
 import org.gradle.api.Project
-import org.gradle.jvm.tasks.Jar
-import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.the
 
@@ -30,6 +28,11 @@ class NeoForgePlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugi
         neoForge.enable {
             version = tapestry.versions.neoforge.get()
             isDisableRecompilation = tapestry.isCI()
+        }
+
+        // Include any dependencies in the JiJ configuration.
+        target.configurations.named("jarJar") {
+            dependencies.addAllLater(target.configurations.named("jij").map { it.incoming.dependencies })
         }
 
         // Convert any class tweakers to access transformers, and register them.
@@ -62,15 +65,5 @@ class NeoForgePlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugi
                         server()
                     }
             }
-    }
-
-    override fun addBuildDependency(other: LoaderPlugin) {
-        target.dependencies.add("api", other.target)
-
-        target.tasks.named<Jar>("jar") { from(other.ownSourceSets.map { set -> set.map { it.output } }) }
-        target.tasks.named<Jar>("sourcesJar") { from(other.ownSourceSets.map { set -> set.map { it.allSource } }) }
-        otherSourceSets.addAll(other.ownSourceSets)
-
-        // FIXME: port over JiJ.
     }
 }
