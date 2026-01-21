@@ -1,9 +1,9 @@
 package me.chrr.tapestry.gradle
 
+import me.chrr.tapestry.gradle.loader.CommonPlugin
 import me.chrr.tapestry.gradle.loader.FabricPlugin
 import me.chrr.tapestry.gradle.loader.LoaderPlugin
 import me.chrr.tapestry.gradle.loader.NeoForgePlugin
-import me.chrr.tapestry.gradle.loader.CommonPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
@@ -30,6 +30,13 @@ class TapestryPlugin : Plugin<Project> {
         // idea: some kind of '@Initializer' annotation that calls a static method
         // idea: an 'updateVersions' task that auto-updates build.gradle.kts
 
+        // We apply only the java-base plugin, since we don't have any source code in the root project by default.
+        // We then create a new "tapestry" configuration to house all of our merged JAR configurations.
+        // FIXME: DefaultAdhocSoftwareComponent is an internal API.
+        target.plugins.apply(JavaBasePlugin::class.java)
+        val component = DefaultAdhocSoftwareComponent("tapestry", target.objects)
+        target.components.add(component)
+
         target.afterEvaluate {
             // Set a few of the options to values depending on the environment.
             val versionTag = when {
@@ -42,14 +49,7 @@ class TapestryPlugin : Plugin<Project> {
             if (!tapestry.game.runDir.isPresent)
                 tapestry.game.runDir.set(target.projectDir.resolve("run"))
 
-            // We apply only the java-base plugin, since we don't have any source code in the root project by default.
-            // We then create a new "tapestry" configuration to house all of our merged JAR configurations.
-            // FIXME: DefaultAdhocSoftwareComponent is an internal API.
-            target.plugins.apply(JavaBasePlugin::class.java)
-            val component = DefaultAdhocSoftwareComponent("tapestry", target.objects)
-            target.components.add(component)
-
-            // Finally, we process all the loader subprojects.
+            // Process all the loader subprojects.
             val plugins = applyLoaderPlugins(target, tapestry)
             createMergedJarTask(target, plugins, tapestry)
             createConfigurations(target, plugins, component)
@@ -114,10 +114,6 @@ class TapestryPlugin : Plugin<Project> {
         // Create a compile-time configuration that defaults to the merged jar.
         val apiElements = createProducerConfiguration("tapestryApiElements", Usage.JAVA_API) {
             outgoing.artifact(root.tasks.named("mergedJar"))
-
-            component.addVariantsFromConfiguration(this) {
-                mapToMavenScope("compile")
-            }
         }
 
         val sourcesElements = createProducerConfiguration("tapestrySourcesElements", Usage.JAVA_RUNTIME) {
@@ -125,53 +121,40 @@ class TapestryPlugin : Plugin<Project> {
             attributes.attribute(DocsType.DOCS_TYPE_ATTRIBUTE, root.objects.named(DocsType.SOURCES))
 
             outgoing.artifact(root.tasks.named("mergedSourcesJar"))
+        }
 
-            component.addVariantsFromConfiguration(this) {
-                mapToMavenScope("runtime")
-            }
+        val runtimeElements = createProducerConfiguration("tapestryRuntimeElements", Usage.JAVA_RUNTIME) {
+            outgoing.artifact(root.tasks.named("mergedJar"))
         }
 
         // Then, for each platform, we create a variant with an attribute.
         fun addVariant(name: String, loaderPlugins: List<LoaderPlugin>) {
+            fun Configuration.addArtifacts(task: String, suffix: String = "") {
+                outgoing.variants.register(name) {
+                    attributes.attribute(PLATFORM_ATTRIBUTE, name.lowercase())
+
+                    loaderPlugins
+                        .mapNotNull { it.target.tasks.findByName(task) }
+                        .forEach {
+                            artifact(it) { classifier = name.lowercase() + suffix }
+                        }
+                }
+            }
+
             // FIXME: this breaks with multiple loader plugins.
-            apiElements.configure {
-                outgoing.variants.register(name) {
-                    attributes.attribute(PLATFORM_ATTRIBUTE, name.lowercase())
-
-                    loaderPlugins
-                        .mapNotNull { it.target.tasks.findByName("jar") }
-                        .forEach {
-                            artifact(it) { classifier = name.lowercase() }
-                        }
-                }
-            }
-
-            sourcesElements.configure {
-                outgoing.variants.register(name) {
-                    attributes.attribute(PLATFORM_ATTRIBUTE, name.lowercase())
-
-                    loaderPlugins
-                        .mapNotNull { it.target.tasks.findByName("sourcesJar") }
-                        .forEach {
-                            artifact(it) { classifier = "${name.lowercase()}-sources" }
-                        }
-                }
-            }
+            apiElements.configure { addArtifacts("jar") }
+            sourcesElements.configure { addArtifacts("sourcesJar", "-sources") }
+            runtimeElements.configure { addArtifacts("jar") }
         }
 
         addVariant("Common", plugins.filterIsInstance<CommonPlugin>())
         addVariant("Fabric", plugins.filterIsInstance<FabricPlugin>())
         addVariant("NeoForge", plugins.filterIsInstance<NeoForgePlugin>())
 
-        // At runtime, we can just use the merged jar always.
-        createProducerConfiguration("tapestryRuntimeElements", Usage.JAVA_RUNTIME) {
-            outgoing.artifact(root.tasks.named("mergedJar"))
-
-            component.addVariantsFromConfiguration(this) {
-                mapToMavenScope("runtime")
-            }
-        }
-
+        // Finally, add them all to the component.
+        component.addVariantsFromConfiguration(apiElements.get()) { mapToMavenScope("compile") }
+        component.addVariantsFromConfiguration(sourcesElements.get()) { }
+        component.addVariantsFromConfiguration(runtimeElements.get()) { mapToMavenScope("runtime") }
     }
 
     fun createMergedJarTask(
