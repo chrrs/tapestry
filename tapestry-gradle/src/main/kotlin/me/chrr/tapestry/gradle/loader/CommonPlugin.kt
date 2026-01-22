@@ -8,6 +8,8 @@ import org.gradle.api.Project
 import org.gradle.kotlin.dsl.the
 
 class CommonPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(tapestry, target) {
+    override val platform = Platform.Common
+
     override fun applyLoaderPlugin() {
         super.applyJavaPlugin("common")
         super.preferPlatformAttribute("common")

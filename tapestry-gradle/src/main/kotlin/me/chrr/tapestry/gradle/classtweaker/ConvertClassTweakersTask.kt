@@ -1,15 +1,16 @@
 package me.chrr.tapestry.gradle.classtweaker
 
 import org.gradle.api.DefaultTask
-import org.gradle.api.tasks.*
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.OutputFiles
+import org.gradle.api.tasks.SkipWhenEmpty
+import org.gradle.api.tasks.TaskAction
 import org.gradle.kotlin.dsl.listProperty
 import java.io.File
 
-@CacheableTask
 open class ConvertClassTweakersTask : DefaultTask() {
     @InputFiles
     @SkipWhenEmpty
-    @PathSensitive(PathSensitivity.RELATIVE)
     val inputFiles = project.objects.listProperty<File>()
 
     @OutputFiles

@@ -1,8 +1,8 @@
 package me.chrr.tapestry.gradle.manifest
 
-import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import me.chrr.tapestry.gradle.GSON
 import me.chrr.tapestry.gradle.TapestryExtension
 import me.chrr.tapestry.gradle.ifPresent
 import org.gradle.api.file.RegularFileProperty
@@ -87,7 +87,7 @@ open class GenerateFabricManifestTask : GenerateManifestTask() {
 
         val file = outputFile.get().asFile
         file.parentFile.mkdirs()
-        file.writeText(Gson().toJson(json))
+        file.writeText(GSON.toJson(json))
     }
 
     private fun gsonArray(list: List<String>): JsonArray {

@@ -1,5 +1,8 @@
 package me.chrr.tapestry.gradle
 
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import me.chrr.tapestry.gradle.jij.PrepareJiJJarsTask
 import me.chrr.tapestry.gradle.loader.CommonPlugin
 import me.chrr.tapestry.gradle.loader.FabricPlugin
 import me.chrr.tapestry.gradle.loader.LoaderPlugin
@@ -19,6 +22,7 @@ import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 
 val PLATFORM_ATTRIBUTE: Attribute<String> = Attribute.of("me.chrr.tapestry.platform", String::class.java)
+val GSON: Gson = GsonBuilder().setPrettyPrinting().create()
 
 class TapestryPlugin : Plugin<Project> {
     override fun apply(target: Project) {
@@ -45,6 +49,9 @@ class TapestryPlugin : Plugin<Project> {
                 else -> "-local"
             }
             tapestry.info.version.set("${tapestry.info.version.get()}$versionTag")
+
+            if (target.version == "unspecified")
+                target.version = tapestry.info.version.get()
 
             if (!tapestry.game.runDir.isPresent)
                 tapestry.game.runDir.set(target.projectDir.resolve("run"))
@@ -162,6 +169,14 @@ class TapestryPlugin : Plugin<Project> {
         plugins: List<LoaderPlugin>,
         tapestry: TapestryExtension,
     ) {
+        // Create the task to prepare the JiJ jars.
+        val prepare = root.tasks.register<PrepareJiJJarsTask>("prepareJijJars") {
+            for (plugin in plugins)
+                configuration(plugin.platform, plugin.target.configurations.named("jij"))
+            outputDir.set(root.tapestryBuildDir.map { it.dir("jij_jars") })
+        }
+
+        // Create the task for both the final JAR, and the sources JAR.
         fun createTask(name: String, sources: Boolean) =
             root.tasks.register<Jar>(name) {
                 group = "build"
@@ -180,9 +195,16 @@ class TapestryPlugin : Plugin<Project> {
                     .flatMap { it.ownSourceSets }
                     .map { set -> set.map { if (sources) it.allSource else it.output } }
                 from(paths)
+
+                if (!sources) {
+                    from(prepare) { into("META-INF/jars") }
+
+                    // FIXME: I feel like there should be a way to do this more idiomatic.
+                    dependsOn(prepare)
+                    doLast { prepare.get().writeManifests(archiveFile.get().asFile) }
+                }
             }
 
-        // Create a task for both the final JAR, and the sources JAR.
         val mergedJar = createTask("mergedJar", false)
         root.tasks.named("build") { dependsOn(mergedJar) }
 

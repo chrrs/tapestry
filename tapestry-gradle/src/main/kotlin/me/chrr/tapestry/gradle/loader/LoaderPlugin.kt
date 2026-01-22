@@ -4,9 +4,11 @@ import me.chrr.tapestry.gradle.PLATFORM_ATTRIBUTE
 import me.chrr.tapestry.gradle.TapestryExtension
 import me.chrr.tapestry.gradle.classtweaker.ConvertClassTweakersTask
 import me.chrr.tapestry.gradle.tapestryBuildDir
+import org.gradle.api.NamedDomainObjectProvider
 import org.gradle.api.Project
-import org.gradle.api.attributes.AttributeDisambiguationRule
-import org.gradle.api.attributes.MultipleCandidatesDetails
+import org.gradle.api.artifacts.Configuration
+import org.gradle.api.attributes.*
+import org.gradle.api.attributes.java.TargetJvmVersion
 import org.gradle.api.file.Directory
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.file.FileCollection
@@ -28,6 +30,9 @@ import java.util.jar.JarFile
 import javax.inject.Inject
 
 abstract class LoaderPlugin(val tapestry: TapestryExtension, val target: Project) {
+    abstract val platform: Platform
+    private var jijConfiguration: NamedDomainObjectProvider<Configuration>? = null
+
     val generatedResourcesDir: Provider<Directory>
             by lazy { target.tapestryBuildDir.map { it.dir("generated") } }
 
@@ -38,19 +43,39 @@ abstract class LoaderPlugin(val tapestry: TapestryExtension, val target: Project
     abstract fun applyLoaderPlugin()
 
     fun applyJavaPlugin(appendix: String): JavaPluginExtension {
+        val targetJavaVersion = 25
+
         target.plugins.apply(JavaLibraryPlugin::class.java)
         val java = target.the<JavaPluginExtension>()
-        java.toolchain.languageVersion.set(JavaLanguageVersion.of(25))
+        java.toolchain.languageVersion.set(JavaLanguageVersion.of(targetJavaVersion))
         java.withSourcesJar()
 
+        if (target.version == "unspecified")
+            target.version = tapestry.info.version.get()
+
         // Create a JiJ configuration.
-        target.configurations.register("jij")
+        target.configurations.register("jij") {
+            attributes.attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, targetJavaVersion)
+            attributes.attribute(Usage.USAGE_ATTRIBUTE, target.objects.named(Usage.JAVA_RUNTIME))
+            attributes.attribute(Bundling.BUNDLING_ATTRIBUTE, target.objects.named(Bundling.EXTERNAL))
+            attributes.attribute(Category.CATEGORY_ATTRIBUTE, target.objects.named(Category.LIBRARY))
+
+            isTransitive = false
+        }
 
         // Properly set JAR names.
         target.tasks.named<Jar>("jar") { tapestry.applyArchiveName(this, appendix) }
         target.tasks.named<Jar>("sourcesJar") { tapestry.applyArchiveName(this, appendix) }
 
         return java
+    }
+
+    fun applyJijConfiguration(configuration: NamedDomainObjectProvider<Configuration>) {
+        this.jijConfiguration = configuration
+
+        // Copy any local JiJ declarations over to the given configuration.
+        val jij = target.configurations.named("jij")
+        configuration.configure { dependencies.addAllLater(jij.map { it.incoming.dependencies }) }
     }
 
     open fun addPluginDependency(other: LoaderPlugin) {
@@ -65,8 +90,9 @@ abstract class LoaderPlugin(val tapestry: TapestryExtension, val target: Project
         // Copy any JiJ declarations over to this project. Since declarations are only resolved
         // after they're already added here, we still have the benefit of selecting the right
         // loader JAR when we're dealing with Tapestry merged JARs.
-        target.configurations.named("jij") {
-            dependencies.addAllLater(other.target.configurations.named("jij").map { it.incoming.dependencies })
+        jijConfiguration?.let { configuration ->
+            val jij = other.target.configurations.named("jij")
+            configuration.configure { dependencies.addAllLater(jij.map { it.incoming.dependencies }) }
         }
     }
 

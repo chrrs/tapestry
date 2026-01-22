@@ -11,6 +11,8 @@ import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.the
 
 class NeoForgePlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(tapestry, target) {
+    override val platform = Platform.NeoForge
+
     override fun applyLoaderPlugin() {
         super.applyJavaPlugin("neoforge")
         super.preferPlatformAttribute("neoforge")
@@ -19,6 +21,7 @@ class NeoForgePlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugi
         // Apply ModDevGradle to build the mod.
         target.plugins.apply(ModDevPlugin::class.java)
         val neoForge = target.the<NeoForgeExtension>()
+        applyJijConfiguration(target.configurations.named("jarJar"))
 
         neoForge.mods.register(tapestry.info.id.get()) {
             ownSourceSets.forEach { sourceSet(it.get()) }
@@ -28,11 +31,6 @@ class NeoForgePlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugi
         neoForge.enable {
             version = tapestry.versions.neoforge.get()
             isDisableRecompilation = tapestry.isCI()
-        }
-
-        // Include any dependencies in the JiJ configuration.
-        target.configurations.named("jarJar") {
-            dependencies.addAllLater(target.configurations.named("jij").map { it.incoming.dependencies })
         }
 
         // Convert any class tweakers to access transformers, and register them.
