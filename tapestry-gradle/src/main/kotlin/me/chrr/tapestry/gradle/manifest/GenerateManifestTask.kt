@@ -15,17 +15,17 @@ abstract class GenerateManifestTask : DefaultTask() {
     fun generate() {
         // Read the output of the annotation processor.
         val fabricEntrypoints = mutableMapOf<String, MutableList<String>>()
-        val platformImplementations = mutableMapOf<String, MutableList<String>>()
+        val implementations = mutableMapOf<String, MutableList<String>>()
 
         val sourceSets = project.the<SourceSetContainer>()
         for (sourceDir in sourceSets.flatMap { it.output.generatedSourcesDirs }) {
             val tapestryDir = sourceDir.resolve("tapestry")
             readPairsToMap(tapestryDir.resolve("entrypoints.txt"), fabricEntrypoints)
-            readPairsToMap(tapestryDir.resolve("platforms.txt"), platformImplementations)
+            readPairsToMap(tapestryDir.resolve("implementations.txt"), implementations)
         }
 
         // Actually generate the manifest.
-        generateManifest(Context(fabricEntrypoints, platformImplementations))
+        generateManifest(Context(fabricEntrypoints, implementations))
     }
 
     private fun readPairsToMap(file: File, map: MutableMap<String, MutableList<String>>) {
@@ -43,6 +43,6 @@ abstract class GenerateManifestTask : DefaultTask() {
 
     data class Context(
         val fabricEntrypoints: Map<String, List<String>>,
-        val platformImplementations: Map<String, List<String>>,
+        val implementations: Map<String, List<String>>,
     )
 }

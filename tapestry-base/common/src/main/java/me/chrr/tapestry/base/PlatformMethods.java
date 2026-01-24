@@ -1,4 +1,4 @@
-package me.chrr.tapestry.base.platform;
+package me.chrr.tapestry.base;
 
 import org.jspecify.annotations.NullMarked;
 
@@ -11,9 +11,4 @@ public interface PlatformMethods {
     Path getGameDirectory();
 
     boolean isModLoaded(String id);
-
-
-    static PlatformMethods get() {
-        return TapestryPlatform.getImplementation(PlatformMethods.class);
-    }
 }

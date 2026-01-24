@@ -1,7 +1,7 @@
 package me.chrr.tapestry.base.neoforge;
 
-import me.chrr.tapestry.base.platform.PlatformMethods;
-import me.chrr.tapestry.gradle.annotation.PlatformImplementation;
+import me.chrr.tapestry.base.PlatformMethods;
+import me.chrr.tapestry.gradle.annotation.Implementation;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLPaths;
 import org.jspecify.annotations.NullMarked;
@@ -9,7 +9,7 @@ import org.jspecify.annotations.NullMarked;
 import java.nio.file.Path;
 
 @NullMarked
-@PlatformImplementation(PlatformMethods.class)
+@Implementation("tapestry:platform_methods")
 public class NeoForgePlatformMethods implements PlatformMethods {
     @Override
     public Path getConfigDirectory() {

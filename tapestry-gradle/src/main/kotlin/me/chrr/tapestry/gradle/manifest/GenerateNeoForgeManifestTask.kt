@@ -50,16 +50,13 @@ open class GenerateNeoForgeManifestTask : GenerateManifestTask() {
             )
         )
 
-        if (ctx.platformImplementations.isNotEmpty())
-            manifest.modproperties = mapOf(
-                info.id.get() to mapOf<String, Any>(
-                    "tapestry" to mapOf<String, Any>(
-                        "platformImplementations" to ctx.platformImplementations
-                            .flatMap { it.value.map { value -> it.key to value } }
-                            .map { mapOf<String, Any>("class" to it.second, "implements" to it.first) }
-                    )
+        manifest.modproperties = mapOf(
+            info.id.get() to mapOf<String, Any>(
+                "tapestry" to mapOf<String, Any>(
+                    "implementations" to ctx.implementations
                 )
             )
+        )
 
         val file = outputFile.get().asFile
         file.parentFile.mkdirs()

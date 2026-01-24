@@ -1,7 +1,7 @@
 package me.chrr.tapestry.gradle.ap;
 
 import me.chrr.tapestry.gradle.annotation.FabricEntrypoint;
-import me.chrr.tapestry.gradle.annotation.PlatformImplementation;
+import me.chrr.tapestry.gradle.annotation.Implementation;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -12,7 +12,6 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.MirroredTypeException;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
 import java.io.IOException;
@@ -22,13 +21,13 @@ import java.util.Set;
 @NullMarked
 public class TapestryAnnotationProcessor extends AbstractProcessor {
     private @Nullable FileObject entrypoints;
-    private @Nullable FileObject platforms;
+    private @Nullable FileObject implementations;
 
     @Override
     public Set<String> getSupportedAnnotationTypes() {
         return Set.of(
                 FabricEntrypoint.class.getName(),
-                PlatformImplementation.class.getName()
+                Implementation.class.getName()
         );
     }
 
@@ -43,7 +42,7 @@ public class TapestryAnnotationProcessor extends AbstractProcessor {
 
         try {
             entrypoints = env.getFiler().createResource(StandardLocation.SOURCE_OUTPUT, "tapestry", "entrypoints.txt");
-            platforms = env.getFiler().createResource(StandardLocation.SOURCE_OUTPUT, "tapestry", "platforms.txt");
+            implementations = env.getFiler().createResource(StandardLocation.SOURCE_OUTPUT, "tapestry", "implementations.txt");
         } catch (IOException e) {
             throw new IllegalStateException("Could not create output resources", e);
         }
@@ -54,7 +53,7 @@ public class TapestryAnnotationProcessor extends AbstractProcessor {
         if (env.processingOver())
             return true;
 
-        if (entrypoints == null || platforms == null)
+        if (entrypoints == null || implementations == null)
             throw new IllegalStateException();
 
         try (Writer writer = entrypoints.openWriter()) {
@@ -74,29 +73,21 @@ public class TapestryAnnotationProcessor extends AbstractProcessor {
             throw new RuntimeException("Failed to write entrypoints", e);
         }
 
-        try (Writer writer = platforms.openWriter()) {
-            for (Element element : env.getElementsAnnotatedWith(PlatformImplementation.class)) {
+        try (Writer writer = implementations.openWriter()) {
+            for (Element element : env.getElementsAnnotatedWith(Implementation.class)) {
                 if (element.getKind() != ElementKind.CLASS)
                     throw new IllegalArgumentException("@PlatformImplementation can only be used on classes");
 
-                PlatformImplementation annotation = element.getAnnotation(PlatformImplementation.class);
+                Implementation annotation = element.getAnnotation(Implementation.class);
                 String receiver = element.toString();
 
                 assert annotation != null;
-                writer.append(getReceiver(annotation)).append(";").append(receiver).append("\n");
+                writer.append(annotation.value()).append(";").append(receiver).append("\n");
             }
         } catch (IOException e) {
-            throw new RuntimeException("Failed to write platform implementations", e);
+            throw new RuntimeException("Failed to write implementations", e);
         }
 
         return true;
-    }
-
-    private static String getReceiver(PlatformImplementation annotation) {
-        try {
-            return annotation.value().toString();
-        } catch (MirroredTypeException exception) {
-            return exception.getTypeMirror().toString();
-        }
     }
 }

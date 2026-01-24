@@ -35,26 +35,18 @@ open class GenerateFabricManifestTask : GenerateManifestTask() {
         manifest.icon = info.icon.orNull
 
         manifest.custom = JsonObject().apply {
-            if (info.isLibrary.get() || info.parentMod.isPresent)
-                add("modmenu", JsonObject().apply {
-                    if (info.isLibrary.get())
-                        add("badges", gsonArray(listOf("library")))
-                    info.parentMod.ifPresent { addProperty("parent", it) }
-                })
+            add("modmenu", JsonObject().apply {
+                if (info.isLibrary.get())
+                    add("badges", gsonArray(listOf("library")))
+                info.parentMod.ifPresent { addProperty("parent", it) }
+            })
 
-            if (ctx.platformImplementations.isNotEmpty())
-                add("tapestry", JsonObject().apply {
-                    add("platformImplementations", JsonArray().apply {
-                        ctx.platformImplementations
-                            .flatMap { it.value.map { value -> it.key to value } }
-                            .forEach { (impl, clazz) ->
-                                add(JsonObject().apply {
-                                    addProperty("class", clazz)
-                                    addProperty("implements", impl)
-                                })
-                            }
-                    })
+            add("tapestry", JsonObject().apply {
+                add("implementations", JsonObject().apply {
+                    for (impl in ctx.implementations)
+                        add(impl.key, gsonArray(impl.value))
                 })
+            })
         }
 
         manifest.contact = mutableMapOf<String, String>().also {
