@@ -1,10 +1,9 @@
 package me.chrr.tapestry.gradle.jij
 
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import me.chrr.tapestry.gradle.GSON
 import me.chrr.tapestry.gradle.PLATFORM_ATTRIBUTE
 import me.chrr.tapestry.gradle.loader.Platform
+import me.chrr.tapestry.gradle.model.FabricModJson
 import net.neoforged.moddev.shadow.net.neoforged.jarjar.metadata.*
 import net.neoforged.moddev.shadow.org.apache.maven.artifact.versioning.DefaultArtifactVersion
 import net.neoforged.moddev.shadow.org.apache.maven.artifact.versioning.VersionRange
@@ -101,16 +100,9 @@ open class PrepareJiJJarsTask : DefaultTask() {
                 val fabricModJson = jar.getPath("fabric.mod.json")
                 val contents = fabricModJson.readText()
 
-                val root = GSON.fromJson(contents, JsonObject::class.java)
-                root.add("jars", JsonArray().apply {
-                    for (artifact in fabricArtifacts) {
-                        add(JsonObject().apply {
-                            addProperty("file", "META-INF/jars/${artifact.fileName}")
-                        })
-                    }
-                })
-
-                fabricModJson.writeText(GSON.toJson(root))
+                val manifest = GSON.fromJson(contents, FabricModJson::class.java)
+                manifest.jars = fabricArtifacts.map { FabricModJson.NestedJar("META-INF/jars/${it.fileName}") }
+                fabricModJson.writeText(GSON.toJson(manifest))
             }
 
             // Create a META-INF/jarjar/manifest.json file if necessary.

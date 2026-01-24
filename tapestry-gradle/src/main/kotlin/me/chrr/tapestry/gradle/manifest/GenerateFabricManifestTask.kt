@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import me.chrr.tapestry.gradle.GSON
 import me.chrr.tapestry.gradle.TapestryExtension
 import me.chrr.tapestry.gradle.ifPresent
+import me.chrr.tapestry.gradle.model.FabricModJson
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputFile
@@ -18,76 +19,67 @@ open class GenerateFabricManifestTask : GenerateManifestTask() {
     val outputFile: RegularFileProperty = project.objects.fileProperty()
 
     override fun generateManifest(ctx: Context) {
+        val manifest = FabricModJson()
         val info = tapestry.get().info
         val transform = tapestry.get().transform
 
-        val json = JsonObject().apply {
-            addProperty("schemaVersion", 1)
+        manifest.id = info.id.get()
+        manifest.version = info.version.get()
 
-            addProperty("id", info.id.get())
-            addProperty("version", info.version.get())
+        manifest.name = info.name.orNull
+        manifest.description = info.description.orNull
+        manifest.environment = info.environment.get().value
+        manifest.authors = info.authors.get()
+        manifest.contributors = info.contributors.orNull ?: listOf()
+        manifest.license = info.license.get()
+        manifest.icon = info.icon.orNull
 
-            info.name.ifPresent { addProperty("name", it) }
-            info.description.ifPresent { addProperty("description", it) }
-            addProperty("environment", info.environment.get().value)
-            add("authors", gsonArray(info.authors.get()))
-            info.contributors.ifPresent { add("contributors", gsonArray(it)) }
-            addProperty("license", info.license.get())
-
-            info.icon.ifPresent { addProperty("icon", it) }
-
-            add("custom", JsonObject().apply {
-                if (info.isLibrary.get() || info.parentMod.isPresent)
-                    add("modmenu", JsonObject().apply {
-                        if (info.isLibrary.get())
-                            add("badges", gsonArray(listOf("library")))
-                        info.parentMod.ifPresent { addProperty("parent", it) }
-                    })
-
-                if (ctx.platformImplementations.isNotEmpty())
-                    add("tapestry", JsonObject().apply {
-                        add("platformImplementations", JsonArray().apply {
-                            ctx.platformImplementations
-                                .flatMap { it.value.map { value -> it.key to value } }
-                                .forEach { (impl, clazz) ->
-                                    add(JsonObject().apply {
-                                        addProperty("class", clazz)
-                                        addProperty("implements", impl)
-                                    })
-                                }
-                        })
-                    })
-            })
-
-            if (info.url.isPresent || info.sources.isPresent || info.issues.isPresent)
-                add("contact", JsonObject().apply {
-                    info.url.ifPresent { addProperty("homepage", it) }
-                    info.sources.ifPresent { addProperty("sources", it) }
-                    info.issues.ifPresent { addProperty("issues", it) }
+        manifest.custom = JsonObject().apply {
+            if (info.isLibrary.get() || info.parentMod.isPresent)
+                add("modmenu", JsonObject().apply {
+                    if (info.isLibrary.get())
+                        add("badges", gsonArray(listOf("library")))
+                    info.parentMod.ifPresent { addProperty("parent", it) }
                 })
 
-            if (ctx.fabricEntrypoints.isNotEmpty())
-                add("entrypoints", JsonObject().apply {
-                    for ((key, values) in ctx.fabricEntrypoints.entries) {
-                        add(key, gsonArray(values))
-                    }
+            if (ctx.platformImplementations.isNotEmpty())
+                add("tapestry", JsonObject().apply {
+                    add("platformImplementations", JsonArray().apply {
+                        ctx.platformImplementations
+                            .flatMap { it.value.map { value -> it.key to value } }
+                            .forEach { (impl, clazz) ->
+                                add(JsonObject().apply {
+                                    addProperty("class", clazz)
+                                    addProperty("implements", impl)
+                                })
+                            }
+                    })
                 })
-
-            // FIXME: mixins
-
-            transform.classTweaker.ifPresent { addProperty("accessWidener", it) }
-
-            add("depends", JsonObject().apply {
-                // FIXME: set the minecraft dependency properly.
-                addProperty("minecraft", "*")
-
-                // FIXME: support custom dependencies.
-            })
         }
+
+        manifest.contact = mutableMapOf<String, String>().also {
+            if (info.url.isPresent) {
+                it["homepage"] = info.url.get()
+                it["sources"] = info.url.get()
+            }
+
+            if (info.issues.isPresent) {
+                it["issues"] = info.issues.get()
+            }
+        }
+
+        if (ctx.fabricEntrypoints.isNotEmpty())
+            manifest.entrypoints = ctx.fabricEntrypoints
+
+        manifest.accessWidener = transform.classTweaker.orNull
+
+        // FIXME: set the minecraft dependency properly.
+        // FIXME: support custom dependencies.
+        manifest.depends = mapOf("minecraft" to "*")
 
         val file = outputFile.get().asFile
         file.parentFile.mkdirs()
-        file.writeText(GSON.toJson(json))
+        file.writeText(GSON.toJson(manifest))
     }
 
     private fun gsonArray(list: List<String>): JsonArray {

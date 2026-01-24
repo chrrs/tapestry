@@ -2,7 +2,7 @@ package me.chrr.tapestry.gradle.manifest
 
 import com.moandjiezana.toml.TomlWriter
 import me.chrr.tapestry.gradle.TapestryExtension
-import me.chrr.tapestry.gradle.ifPresent
+import me.chrr.tapestry.gradle.model.NeoForgeModsToml
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputFile
@@ -19,66 +19,47 @@ open class GenerateNeoForgeManifestTask : GenerateManifestTask() {
         if (ctx.fabricEntrypoints.isNotEmpty())
             throw IllegalStateException("@FabricEntrypoint can only be used for Fabric targets.")
 
+        val manifest = NeoForgeModsToml()
         val info = tapestry.get().info
 
-        val toml = mutableMapOf<String, Any>().apply {
-            this["modLoader"] = "javafml"
-            this["loaderVersion"] = "[1,)"
+        manifest.issueTrackerUrl = info.issues.orNull
+        manifest.license = info.license.get()
 
-            info.issues.ifPresent { this["issueTrackerUrl"] = it }
-            this["license"] = info.license.get()
+        manifest.mods = listOf(NeoForgeModsToml.Mod().also { mod ->
+            mod.modId = info.id.get()
+            mod.version = info.version.get()
 
-            this["mods"] = listOf(mutableMapOf<String, Any>().apply {
-                this["modId"] = info.id.get()
-                this["version"] = info.version.get()
+            mod.displayName = info.name.orNull
+            mod.description = info.description.orNull
+            mod.authors = info.authors.orNull?.joinToString(", ")
+            mod.credits = info.contributors.orNull
+                ?.let { if (it.isEmpty()) null else it }
+                ?.joinToString(", ")
+            mod.logoFile = info.icon.orNull
+            mod.displayURL = info.url.orNull
+        })
 
-                info.name.ifPresent { this["displayName"] = it }
-                info.description.ifPresent { this["description"] = it }
+        // FIXME: set the minecraft dependency properly.
+        // FIXME: support custom dependencies.
+        manifest.dependencies = mapOf(
+            info.id.get() to listOf(
+                NeoForgeModsToml.Dependency("minecraft", "[1,)")
+            )
+        )
 
-                this["authors"] = info.authors.get().joinToString(", ")
-                info.contributors.ifPresent {
-                    if (it.isNotEmpty())
-                        this["credits"] = it.joinToString(", ")
-                }
-
-                info.icon.ifPresent { this["logoFile"] = it }
-
-                this["logoBlur"] = false
-                info.url.ifPresent { this["displayURL"] = it }
-
-                // FIXME: mixins
-                // FIXME: accesstransformers
-            })
-
-            this["dependencies"] = mapOf(info.id.get() to mutableListOf<Any>().apply {
-                // FIXME: set the minecraft dependency properly.
-                add(mutableMapOf<String, Any>().apply {
-                    this["modId"] = "minecraft"
-                    this["versionRange"] = "[1,)"
-                })
-
-                // FIXME: support custom dependencies.
-            })
-
-            if (ctx.platformImplementations.isNotEmpty())
-                this["modproperties"] = mapOf(
-                    info.id.get() to mapOf<String, Any>(
-                        "tapestry" to mapOf<String, Any>(
-                            "platformImplementations" to ctx.platformImplementations
-                                .flatMap { it.value.map { value -> it.key to value } }
-                                .map { (impl, clazz) ->
-                                    mapOf<String, Any>(
-                                        "class" to clazz,
-                                        "implements" to impl,
-                                    )
-                                }
-                        )
+        if (ctx.platformImplementations.isNotEmpty())
+            manifest.modproperties = mapOf(
+                info.id.get() to mapOf<String, Any>(
+                    "tapestry" to mapOf<String, Any>(
+                        "platformImplementations" to ctx.platformImplementations
+                            .flatMap { it.value.map { value -> it.key to value } }
+                            .map { mapOf<String, Any>("class" to it.second, "implements" to it.first) }
                     )
                 )
-        }
+            )
 
         val file = outputFile.get().asFile
         file.parentFile.mkdirs()
-        file.writeText(TomlWriter().write(toml))
+        file.writeText(TomlWriter().write(manifest))
     }
 }
