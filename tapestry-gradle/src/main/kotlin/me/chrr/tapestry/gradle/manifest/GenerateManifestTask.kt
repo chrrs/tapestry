@@ -9,6 +9,7 @@ import java.io.File
 abstract class GenerateManifestTask : DefaultTask() {
     init {
         dependsOn("compileJava")
+        outputs.upToDateWhen { false }
     }
 
     @TaskAction
