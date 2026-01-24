@@ -21,6 +21,7 @@ open class GenerateNeoForgeManifestTask : GenerateManifestTask() {
 
         val manifest = NeoForgeModsToml()
         val info = tapestry.get().info
+        val transform = tapestry.get().transform
 
         manifest.issueTrackerUrl = info.issues.orNull
         manifest.license = info.license.get()
@@ -38,6 +39,8 @@ open class GenerateNeoForgeManifestTask : GenerateManifestTask() {
             mod.logoFile = info.icon.orNull
             mod.displayURL = info.url.orNull
         })
+
+        manifest.mixins = transform.mixinConfigs.orNull?.map { NeoForgeModsToml.Mixin(it) } ?: emptyList()
 
         // FIXME: set the minecraft dependency properly.
         // FIXME: support custom dependencies.

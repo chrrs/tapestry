@@ -20,6 +20,7 @@ class FabricModJson {
     var custom: JsonObject? = null
     var contact: Map<String, String> = emptyMap()
     var entrypoints: Map<String, List<String>> = emptyMap()
+    var mixins: List<String> = emptyList()
 
     var accessWidener: String? = null
     var depends: Map<String, String> = emptyMap()

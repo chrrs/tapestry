@@ -68,8 +68,8 @@ open class GenerateFabricManifestTask : GenerateManifestTask() {
             }
         }
 
-        if (ctx.fabricEntrypoints.isNotEmpty())
-            manifest.entrypoints = ctx.fabricEntrypoints
+        manifest.entrypoints = ctx.fabricEntrypoints
+        manifest.mixins = transform.mixinConfigs.orNull ?: emptyList()
 
         manifest.accessWidener = transform.classTweaker.orNull
 

@@ -5,6 +5,8 @@ import net.fabricmc.loom.LoomCompanionGradlePlugin
 import net.neoforged.moddevgradle.boot.ModDevPlugin
 import net.neoforged.moddevgradle.dsl.NeoForgeExtension
 import org.gradle.api.Project
+import org.gradle.kotlin.dsl.dependencies
+import org.gradle.kotlin.dsl.maven
 import org.gradle.kotlin.dsl.the
 
 class CommonPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(tapestry, target) {
@@ -35,6 +37,14 @@ class CommonPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(
         // Convert any class tweakers to access transformers, and register them.
         val convertClassTweakers = super.createAccessTransformerTask()
         neoForge.accessTransformers.from(convertClassTweakers)
+
+        // Add Mixin to the dependencies. Both of these already exist for Fabric and NeoForge,
+        // so we only need to add these to the common project.
+        target.repositories.maven("https://repo.spongepowered.org/maven/")
+        target.dependencies {
+            "compileOnly"("org.spongepowered:mixin:0.8.7")
+            "compileOnly"("io.github.llamalad7:mixinextras-common:0.5.3")
+        }
     }
 
     override fun addPluginDependency(other: LoaderPlugin) =
