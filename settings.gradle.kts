@@ -11,3 +11,5 @@ pluginManagement {
 fun includeMod(name: String) = include(name, "$name:common", "$name:fabric", "$name:neoforge")
 includeMod("tapestry-base")
 includeMod("tapestry-config")
+
+includeMod("test-mod")
