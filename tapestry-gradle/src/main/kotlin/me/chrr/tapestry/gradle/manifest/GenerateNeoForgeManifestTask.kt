@@ -2,6 +2,7 @@ package me.chrr.tapestry.gradle.manifest
 
 import com.moandjiezana.toml.TomlWriter
 import me.chrr.tapestry.gradle.TapestryExtension
+import me.chrr.tapestry.gradle.loader.Platform
 import me.chrr.tapestry.gradle.model.NeoForgeModsToml
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.Internal
@@ -40,7 +41,9 @@ open class GenerateNeoForgeManifestTask : GenerateManifestTask() {
             mod.displayURL = info.url.orNull
         })
 
-        manifest.mixins = transform.mixinConfigs.orNull?.map { NeoForgeModsToml.Mixin(it) } ?: emptyList()
+        manifest.mixins = listOf(transform.mixinConfigs, transform.mixinConfigs(Platform.NeoForge))
+            .flatMap { it.get() }
+            .map { NeoForgeModsToml.Mixin(it) }
 
         // FIXME: set the minecraft dependency properly.
         // FIXME: support custom dependencies.

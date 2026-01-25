@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import me.chrr.tapestry.gradle.GSON
 import me.chrr.tapestry.gradle.TapestryExtension
 import me.chrr.tapestry.gradle.ifPresent
+import me.chrr.tapestry.gradle.loader.Platform
 import me.chrr.tapestry.gradle.model.FabricModJson
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.Internal
@@ -61,7 +62,7 @@ open class GenerateFabricManifestTask : GenerateManifestTask() {
         }
 
         manifest.entrypoints = ctx.fabricEntrypoints
-        manifest.mixins = transform.mixinConfigs.orNull ?: emptyList()
+        manifest.mixins = listOf(transform.mixinConfigs, transform.mixinConfigs(Platform.Fabric)).flatMap { it.get() }
 
         manifest.accessWidener = transform.classTweaker.orNull
 

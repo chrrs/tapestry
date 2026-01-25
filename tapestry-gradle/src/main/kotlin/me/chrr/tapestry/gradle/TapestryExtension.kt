@@ -1,5 +1,6 @@
 package me.chrr.tapestry.gradle
 
+import me.chrr.tapestry.gradle.loader.Platform
 import org.gradle.api.Project
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.model.ObjectFactory
@@ -77,7 +78,17 @@ abstract class TapestryExtension(objects: ObjectFactory) {
 
     open class Transform @Inject constructor(objects: ObjectFactory) {
         val classTweaker = objects.property<String>()
+
         val mixinConfigs = objects.listProperty<String>()
+        private val fabricMixinConfigs = objects.listProperty<String>()
+        private val neoforgeMixinConfigs = objects.listProperty<String>()
+
+        fun mixinConfigs(platform: Platform) =
+            when (platform) {
+                Platform.Common -> mixinConfigs
+                Platform.Fabric -> fabricMixinConfigs
+                Platform.NeoForge -> neoforgeMixinConfigs
+            }
     }
 
     open class Depends @Inject constructor(objects: ObjectFactory) {
