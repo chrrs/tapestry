@@ -53,7 +53,10 @@ public abstract class ReflectedConfig implements Config {
             namingStrategy = serializeNameStrategyAnnotation.value();
 
         // Get the config screen title.
-        this.title = getTranslatedName("title");
+        SerializeName serializeNameAnnotation = getClass().getAnnotation(SerializeName.class);
+        this.title = serializeNameAnnotation != null
+                ? getTranslatedName(serializeNameAnnotation.value() + ".title")
+                : getTranslatedName("title");
 
         // Construct options for all public, non-static, non-transient fields.
         for (Field field : getClass().getFields()) {

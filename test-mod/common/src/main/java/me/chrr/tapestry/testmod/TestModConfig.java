@@ -11,6 +11,7 @@ import me.chrr.tapestry.config.value.Value;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
+@SerializeName("client")
 @SerializeName.Strategy(NamingStrategy.SNAKE_CASE)
 @SuppressWarnings("unused")
 public class TestModConfig extends ReflectedConfig {
