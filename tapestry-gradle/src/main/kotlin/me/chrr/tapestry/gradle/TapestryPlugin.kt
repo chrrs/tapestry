@@ -3,12 +3,7 @@ package me.chrr.tapestry.gradle
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import me.chrr.tapestry.gradle.jij.PrepareJiJJarsTask
-import me.chrr.tapestry.gradle.platform.CommonPlatform
-import me.chrr.tapestry.gradle.platform.FabricPlatform
-import me.chrr.tapestry.gradle.platform.LoaderPlatform
-import me.chrr.tapestry.gradle.platform.NeoForgePlatform
-import me.chrr.tapestry.gradle.platform.Platform
-import me.chrr.tapestry.gradle.platform.PlatformType
+import me.chrr.tapestry.gradle.platform.*
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
@@ -172,7 +167,13 @@ class TapestryPlugin : Plugin<Project> {
                 tapestry.applyArchiveName(this, null)
                 if (sources) archiveClassifier.set("sources")
 
-                manifest.attributes("Tapestry-Merged-Jar" to "true")
+                manifest.attributes(
+                    "Tapestry-Merged-Jar" to "true",
+                    "Fabric-Mapping-Namespace" to "official",
+                    "Fabric-Minecraft-Version" to tapestry.versions.minecraft.get(),
+                    "Fabric-Loader-Version" to tapestry.versions.fabricLoader.get(),
+                )
+
                 duplicatesStrategy = DuplicatesStrategy.FAIL
 
                 val paths = platforms
