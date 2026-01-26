@@ -1,7 +1,8 @@
-package me.chrr.tapestry.gradle.loader
+package me.chrr.tapestry.gradle.platform
 
 import me.chrr.tapestry.gradle.Environment
 import me.chrr.tapestry.gradle.TapestryExtension
+import me.chrr.tapestry.gradle.classtweaker.ConvertClassTweakersTask
 import me.chrr.tapestry.gradle.ifPresent
 import me.chrr.tapestry.gradle.manifest.GenerateNeoForgeManifestTask
 import net.neoforged.moddevgradle.boot.ModDevPlugin
@@ -10,22 +11,21 @@ import org.gradle.api.Project
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.the
 
-class NeoForgePlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(tapestry, target) {
-    override val platform = Platform.NeoForge
+class NeoForgePlatform(tapestry: TapestryExtension, target: Project) : LoaderPlatform(tapestry, target) {
+    override val type = PlatformType.NeoForge
+    override val jijConfigurationName = "jarJar"
 
-    override fun applyLoaderPlugin() {
-        super.applyJavaPlugin("neoforge")
+    override fun applyPlatformPlugin() {
+        super.applyPlatformPlugin()
         super.preferPlatformAttribute("neoforge")
-        super.applyAnnotationProcessor()
 
         // Apply ModDevGradle to build the mod.
         target.plugins.apply(ModDevPlugin::class.java)
         val neoForge = target.the<NeoForgeExtension>()
-        applyJijConfiguration(target.configurations.named("jarJar"))
 
         neoForge.mods.register(tapestry.info.id.get()) {
-            ownSourceSets.forEach { sourceSet(it.get()) }
-            otherSourceSets.forEach { sourceSet(it.get()) }
+            sourceSets.get().forEach { sourceSet(it) }
+            commonSourceSets.get().forEach { sourceSet(it) }
         }
 
         neoForge.enable {
@@ -34,14 +34,19 @@ class NeoForgePlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugi
         }
 
         // Convert any class tweakers to access transformers, and register them.
-        super.createAccessTransformerTask().also {
-            neoForge.accessTransformers.from(it)
-            super.copyGeneratedResources(target.files(it))
+        val accessTransformer = target.tasks.register<ConvertClassTweakersTask>("convertClassTweaker") {
+            if (tapestry.transform.classTweaker.isPresent) {
+                inputFiles.add(findResource(tapestry.transform.classTweaker))
+                outputFiles.add(generatedResourcesDir.map { it.file("META-INF/accesstransformer.cfg").asFile })
+            }
         }
+
+        neoForge.accessTransformers.from(accessTransformer)
+        super.copyGeneratedResources(target.files(accessTransformer))
 
         // Automatically generate neoforge.mods.toml from tapestry extension.
         target.tasks.register<GenerateNeoForgeManifestTask>("generateNeoForgeModsToml") {
-            tapestry.set(this@NeoForgePlugin.tapestry)
+            tapestry.set(this@NeoForgePlatform.tapestry)
             outputFile.set(generatedResourcesDir.map { it.dir("META-INF").file("neoforge.mods.toml") })
         }.also { super.copyGeneratedResources(target.files(it)) }
 

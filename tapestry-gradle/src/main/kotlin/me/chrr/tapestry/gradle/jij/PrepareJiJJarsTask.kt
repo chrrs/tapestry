@@ -2,7 +2,7 @@ package me.chrr.tapestry.gradle.jij
 
 import me.chrr.tapestry.gradle.GSON
 import me.chrr.tapestry.gradle.PLATFORM_ATTRIBUTE
-import me.chrr.tapestry.gradle.loader.Platform
+import me.chrr.tapestry.gradle.platform.PlatformType
 import me.chrr.tapestry.gradle.model.FabricModJson
 import net.neoforged.moddev.shadow.net.neoforged.jarjar.metadata.*
 import net.neoforged.moddev.shadow.org.apache.maven.artifact.versioning.DefaultArtifactVersion
@@ -41,7 +41,7 @@ open class PrepareJiJJarsTask : DefaultTask() {
     @OutputDirectory
     val outputDir: DirectoryProperty = project.objects.directoryProperty()
 
-    fun configuration(platform: Platform, configuration: Provider<Configuration>) {
+    fun configuration(platform: PlatformType, configuration: Provider<Configuration>) {
         dependsOn(configuration)
 
         val view = configuration.map { configuration ->
@@ -49,7 +49,7 @@ open class PrepareJiJJarsTask : DefaultTask() {
                 attributes.attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, ArtifactTypeDefinition.JAR_TYPE)
 
                 // If we're on the common platform, clear the platform attribute so we get the merged JAR.
-                if (platform == Platform.Common) attributes.attribute(PLATFORM_ATTRIBUTE, "")
+                if (platform == PlatformType.Common) attributes.attribute(PLATFORM_ATTRIBUTE, "")
             }
         }
 
@@ -68,7 +68,7 @@ open class PrepareJiJJarsTask : DefaultTask() {
             project.logger.error("JiJ has input files, but no artifacts.")
 
         for (artifact in artifacts) {
-            if (artifact.platform == Platform.Fabric || artifact.platform == Platform.Common) {
+            if (artifact.platform == PlatformType.Fabric || artifact.platform == PlatformType.Common) {
                 val outputFile = outputDir.resolve(artifact.fileName)
                 artifact.file.copyTo(outputFile, true)
 
@@ -95,7 +95,7 @@ open class PrepareJiJJarsTask : DefaultTask() {
         openZip(jar).use { jar ->
             // Merge a "jars" section into fabric.mod.json if necessary.
             val fabricArtifacts = artifacts.get()
-                .filter { it.platform == Platform.Fabric || it.platform == Platform.Common }
+                .filter { it.platform == PlatformType.Fabric || it.platform == PlatformType.Common }
             if (fabricArtifacts.isNotEmpty()) {
                 val fabricModJson = jar.getPath("fabric.mod.json")
                 val contents = fabricModJson.readText()
@@ -107,7 +107,7 @@ open class PrepareJiJJarsTask : DefaultTask() {
 
             // Create a META-INF/jarjar/manifest.json file if necessary.
             val neoforgeArtifacts = artifacts.get()
-                .filter { it.platform == Platform.NeoForge || it.platform == Platform.Common }
+                .filter { it.platform == PlatformType.NeoForge || it.platform == PlatformType.Common }
             if (neoforgeArtifacts.isNotEmpty()) {
                 val metadata = Metadata(neoforgeArtifacts.map {
                     ContainedJarMetadata(

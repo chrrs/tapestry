@@ -1,13 +1,13 @@
 package me.chrr.tapestry.gradle.jij
 
 import com.google.gson.JsonObject
-import me.chrr.tapestry.gradle.loader.Platform
+import me.chrr.tapestry.gradle.platform.PlatformType
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 import org.gradle.api.artifacts.result.ResolvedArtifactResult
 import java.io.File
 
 class DependencyArtifact {
-    val platform: Platform
+    val platform: PlatformType
     val file: File
 
     val module: Identifier
@@ -16,7 +16,7 @@ class DependencyArtifact {
     val fileName
         get() = "${platform.name.lowercase()}_${file.name}"
 
-    constructor(platform: Platform, artifact: ResolvedArtifactResult) {
+    constructor(platform: PlatformType, artifact: ResolvedArtifactResult) {
         this.platform = platform
         this.file = artifact.file
 

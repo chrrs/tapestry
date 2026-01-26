@@ -5,7 +5,6 @@ plugins {
 tapestry {
     versions {
         minecraft = rootProject.prop("minecraft.version")
-        neoform = rootProject.prop("neoform.version")
         fabricLoader = rootProject.prop("fabric.loader.version")
         neoforge = rootProject.prop("neoforge.version")
     }

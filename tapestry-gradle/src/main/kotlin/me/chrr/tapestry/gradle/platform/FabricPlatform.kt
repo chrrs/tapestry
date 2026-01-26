@@ -1,4 +1,4 @@
-package me.chrr.tapestry.gradle.loader
+package me.chrr.tapestry.gradle.platform
 
 import me.chrr.tapestry.gradle.Environment
 import me.chrr.tapestry.gradle.TapestryExtension
@@ -7,38 +7,38 @@ import me.chrr.tapestry.gradle.manifest.GenerateFabricManifestTask
 import net.fabricmc.loom.LoomNoRemapGradlePlugin
 import net.fabricmc.loom.api.LoomGradleExtensionAPI
 import org.gradle.api.Project
-import org.gradle.kotlin.dsl.maven
-import org.gradle.kotlin.dsl.register
-import org.gradle.kotlin.dsl.the
+import org.gradle.kotlin.dsl.*
 
-class FabricPlugin(tapestry: TapestryExtension, target: Project) : LoaderPlugin(tapestry, target) {
-    override val platform = Platform.Fabric
+class FabricPlatform(tapestry: TapestryExtension, target: Project) : LoaderPlatform(tapestry, target) {
+    override val type = PlatformType.Fabric
+    override val jijConfigurationName = "include"
 
-    override fun applyLoaderPlugin() {
-        super.applyJavaPlugin("fabric")
+    override fun applyPlatformPlugin() {
+        super.applyPlatformPlugin()
         super.preferPlatformAttribute("fabric")
-        super.applyAnnotationProcessor()
 
         // Apply Fabric Loom to build the mod.
-        target.plugins.apply(LoomNoRemapGradlePlugin::class.java)
+        target.plugins.apply(LoomNoRemapGradlePlugin::class)
         val loom = target.the<LoomGradleExtensionAPI>()
-        applyJijConfiguration(target.configurations.named("include"))
 
         loom.mods.register(tapestry.info.id.get()) {
-            ownSourceSets.forEach { sourceSet(it.get()) }
-            otherSourceSets.forEach { sourceSet(it.get()) }
+            sourceSets.get().forEach { sourceSet(it) }
+            commonSourceSets.get().forEach { sourceSet(it) }
         }
 
+        // Add the Minecraft and Fabric Loader dependencies.
         target.repositories.add(target.repositories.maven("https://maven.fabricmc.net/"))
-        target.dependencies.add("minecraft", "com.mojang:minecraft:${tapestry.versions.minecraft.get()}")
-        target.dependencies.add("implementation", "net.fabricmc:fabric-loader:${tapestry.versions.fabricLoader.get()}")
+        target.dependencies {
+            "minecraft"(tapestry.versions.minecraft.map { "com.mojang:minecraft:$it" })
+            "implementation"(tapestry.versions.fabricLoader.map { "net.fabricmc:fabric-loader:$it" })
+        }
 
         // Register the class tweaker specified in the tapestry extension.
         loom.accessWidenerPath.set(target.layout.file(super.findResource(tapestry.transform.classTweaker)))
 
         // Automatically generate fabric.mod.json from tapestry extension.
         target.tasks.register<GenerateFabricManifestTask>("generateFabricModJson") {
-            tapestry.set(this@FabricPlugin.tapestry)
+            tapestry.set(this@FabricPlatform.tapestry)
             outputFile.set(generatedResourcesDir.map { it.file("fabric.mod.json") })
         }.also { super.copyGeneratedResources(target.files(it)) }
 

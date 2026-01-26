@@ -3,10 +3,12 @@ package me.chrr.tapestry.gradle
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import me.chrr.tapestry.gradle.jij.PrepareJiJJarsTask
-import me.chrr.tapestry.gradle.loader.CommonPlugin
-import me.chrr.tapestry.gradle.loader.FabricPlugin
-import me.chrr.tapestry.gradle.loader.LoaderPlugin
-import me.chrr.tapestry.gradle.loader.NeoForgePlugin
+import me.chrr.tapestry.gradle.platform.CommonPlatform
+import me.chrr.tapestry.gradle.platform.FabricPlatform
+import me.chrr.tapestry.gradle.platform.LoaderPlatform
+import me.chrr.tapestry.gradle.platform.NeoForgePlatform
+import me.chrr.tapestry.gradle.platform.Platform
+import me.chrr.tapestry.gradle.platform.PlatformType
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
@@ -24,15 +26,10 @@ import org.gradle.kotlin.dsl.register
 val PLATFORM_ATTRIBUTE: Attribute<String> = Attribute.of("me.chrr.tapestry.platform", String::class.java)
 val GSON: Gson = GsonBuilder().setPrettyPrinting().create()
 
+@Suppress("unused")
 class TapestryPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         val tapestry = target.extensions.create<TapestryExtension>("tapestry")
-
-        // fixme: move '@PlatformImplementation' to tapestry-base?
-        // fixme: platforms should use some kind of loader-specific services?
-        //        -> use reflection to detect presence of loader classes.
-        // idea: some kind of '@Initializer' annotation that calls a static method
-        // idea: an 'updateVersions' task that auto-updates build.gradle.kts
 
         // We apply only the java-base plugin, since we don't have any source code in the root project by default.
         // We then create a new "tapestry" configuration to house all of our merged JAR configurations.
@@ -50,20 +47,21 @@ class TapestryPlugin : Plugin<Project> {
             }
             tapestry.info.version.set("${tapestry.info.version.get()}$versionTag")
 
-            if (target.version == "unspecified")
-                target.version = tapestry.info.version.get()
-
             if (!tapestry.game.runDir.isPresent)
                 tapestry.game.runDir.set(target.projectDir.resolve("run"))
 
+            // If the project version isn't set, set it to the mod version.
+            if (target.version == "unspecified")
+                target.version = tapestry.info.version.get()
+
             // Process all the loader subprojects.
-            val plugins = applyLoaderPlugins(target, tapestry)
-            createMergedJarTask(target, plugins, tapestry)
-            createConfigurations(target, plugins, component)
+            val platforms = registerPlatforms(target, tapestry)
+            createMergedJarTask(target, platforms, tapestry)
+            createConfigurations(target, platforms, component)
         }
     }
 
-    fun applyLoaderPlugins(target: Project, tapestry: TapestryExtension): List<LoaderPlugin> {
+    fun registerPlatforms(target: Project, tapestry: TapestryExtension): List<Platform> {
         // Make sure there are no duplicate projects.
         val allProjects = listOfNotNull(
             tapestry.projects.common.orNull,
@@ -77,86 +75,79 @@ class TapestryPlugin : Plugin<Project> {
         if (allProjects.contains(target))
             throw IllegalArgumentException("The root project cannot be a loader project.")
 
-        // Create NeoForm plugin for all common projects.
-        val common = tapestry.projects.common.getPresentOr { listOf(target.project("common")) }
-        val commonPlugins = common.map { CommonPlugin(tapestry, it) }
+        // Create platforms for all projects.
+        val platforms = listOf(
+            tapestry.projects.common.getPresentOr { listOf(target.project("common")) }
+                .map { CommonPlatform(tapestry, it) },
+            tapestry.projects.common.getPresentOr { listOf(target.project("fabric")) }
+                .map { FabricPlatform(tapestry, it) },
+            tapestry.projects.common.getPresentOr { listOf(target.project("neoforge")) }
+                .map { NeoForgePlatform(tapestry, it) },
+        ).flatten()
 
-        // Create loader-specific plugin for all loader projects.
-        val loaderPlugins = mutableListOf<LoaderPlugin>()
+        // Register the common platforms with all the loader platforms.
+        val loaders = platforms.mapNotNull { it as? LoaderPlatform }
+        val commons = platforms.mapNotNull { it as? CommonPlatform }
 
-        val fabric = tapestry.projects.fabric.getPresentOr { listOf(target.project("fabric")) }
-        if (tapestry.versions.fabricLoader.isPresent)
-            loaderPlugins.addAll(fabric.map { FabricPlugin(tapestry, it) })
+        for (platform in commons)
+            loaders.forEach { it.commonPlatforms.add(platform) }
 
-        val neoforge = tapestry.projects.neoforge.getPresentOr { listOf(target.project("neoforge")) }
-        if (tapestry.versions.neoforge.isPresent)
-            loaderPlugins.addAll(neoforge.map { NeoForgePlugin(tapestry, it) })
+        // Apply all the platform plugins.
+        for (platform in platforms)
+            platform.applyPlatformPlugin()
 
-        // Apply the common plugins.
-        for (plugin in commonPlugins)
-            plugin.applyLoaderPlugin()
-
-        // Apply the loader plugins and depend on the common projects.
-        for (plugin in loaderPlugins) {
-            plugin.applyLoaderPlugin()
-            commonPlugins.forEach { plugin.addPluginDependency(it) }
-        }
-
-        return listOf(commonPlugins, loaderPlugins).flatten()
+        return platforms
     }
 
-    fun createConfigurations(root: Project, plugins: List<LoaderPlugin>, component: AdhocComponentWithVariants) {
+    fun createConfigurations(root: Project, platforms: List<Platform>, component: AdhocComponentWithVariants) {
         fun createProducerConfiguration(name: String, usage: String, configure: Configuration.() -> Unit) =
             root.configurations.register(name) {
                 attributes.attribute(Usage.USAGE_ATTRIBUTE, root.objects.named(usage))
                 attributes.attribute(Category.CATEGORY_ATTRIBUTE, root.objects.named(Category.LIBRARY))
                 attributes.attribute(Bundling.BUNDLING_ATTRIBUTE, root.objects.named(Bundling.EXTERNAL))
 
-                configure.invoke(this)
-
                 isCanBeConsumed = true
                 isCanBeResolved = false
+
+                configure.invoke(this)
             }
 
-        // Create a compile-time configuration that defaults to the merged jar.
+        // Create producer configurations for API elements, sources and runtime.
         val apiElements = createProducerConfiguration("tapestryApiElements", Usage.JAVA_API) {
             outgoing.artifact(root.tasks.named("mergedJar"))
-        }
-
-        val sourcesElements = createProducerConfiguration("tapestrySourcesElements", Usage.JAVA_RUNTIME) {
-            attributes.attribute(Category.CATEGORY_ATTRIBUTE, root.objects.named(Category.DOCUMENTATION))
-            attributes.attribute(DocsType.DOCS_TYPE_ATTRIBUTE, root.objects.named(DocsType.SOURCES))
-
-            outgoing.artifact(root.tasks.named("mergedSourcesJar"))
         }
 
         val runtimeElements = createProducerConfiguration("tapestryRuntimeElements", Usage.JAVA_RUNTIME) {
             outgoing.artifact(root.tasks.named("mergedJar"))
         }
 
-        // Then, for each platform, we create a variant with an attribute.
-        fun addVariant(name: String, loaderPlugins: List<LoaderPlugin>) {
-            fun Configuration.addArtifacts(task: String, suffix: String = "") {
-                outgoing.variants.register(name) {
-                    attributes.attribute(PLATFORM_ATTRIBUTE, name.lowercase())
+        val sourcesElements = createProducerConfiguration("tapestrySourcesElements", Usage.JAVA_RUNTIME) {
+            attributes.attribute(Category.CATEGORY_ATTRIBUTE, root.objects.named(Category.DOCUMENTATION))
+            attributes.attribute(DocsType.DOCS_TYPE_ATTRIBUTE, root.objects.named(DocsType.SOURCES))
+            outgoing.artifact(root.tasks.named("mergedSourcesJar"))
+        }
 
-                    loaderPlugins
+        // Then, for each platform, we create a variant with a platform attribute.
+        fun addVariant(type: PlatformType, platforms: List<Platform>) {
+            fun Configuration.addArtifacts(task: String, suffix: String = "") {
+                outgoing.variants.register(type.name) {
+                    attributes.attribute(PLATFORM_ATTRIBUTE, type.name.lowercase())
+
+                    platforms
                         .mapNotNull { it.target.tasks.findByName(task) }
                         .forEach {
-                            artifact(it) { classifier = name.lowercase() + suffix }
+                            artifact(it) { classifier = it.name.lowercase() + suffix }
                         }
                 }
             }
 
-            // FIXME: this breaks with multiple loader plugins.
             apiElements.configure { addArtifacts("jar") }
-            sourcesElements.configure { addArtifacts("sourcesJar", "-sources") }
             runtimeElements.configure { addArtifacts("jar") }
+            sourcesElements.configure { addArtifacts("sourcesJar", "-sources") }
         }
 
-        addVariant("Common", plugins.filterIsInstance<CommonPlugin>())
-        addVariant("Fabric", plugins.filterIsInstance<FabricPlugin>())
-        addVariant("NeoForge", plugins.filterIsInstance<NeoForgePlugin>())
+        for ((type, platforms) in platforms.groupBy { it.type })
+            addVariant(type, platforms)
 
         // Finally, add them all to the component.
         component.addVariantsFromConfiguration(apiElements.get()) { mapToMavenScope("compile") }
@@ -164,16 +155,12 @@ class TapestryPlugin : Plugin<Project> {
         component.addVariantsFromConfiguration(runtimeElements.get()) { mapToMavenScope("runtime") }
     }
 
-    fun createMergedJarTask(
-        root: Project,
-        plugins: List<LoaderPlugin>,
-        tapestry: TapestryExtension,
-    ) {
+    fun createMergedJarTask(root: Project, platforms: List<Platform>, tapestry: TapestryExtension) {
         // Create the task to prepare the JiJ jars.
         val prepare = root.tasks.register<PrepareJiJJarsTask>("prepareJijJars") {
-            for (plugin in plugins)
-                configuration(plugin.platform, plugin.target.configurations.named("jij"))
-            outputDir.set(root.tapestryBuildDir.map { it.dir("jij_jars") })
+            for (platform in platforms)
+                configuration(platform.type, platform.target.configurations.named("jij"))
+            outputDir.set(root.tapestryBuildDir.map { it.dir("jijJars") })
         }
 
         // Create the task for both the final JAR, and the sources JAR.
@@ -188,12 +175,8 @@ class TapestryPlugin : Plugin<Project> {
                 manifest.attributes("Tapestry-Merged-Jar" to "true")
                 duplicatesStrategy = DuplicatesStrategy.FAIL
 
-                val jar = plugins.map { it.target.tasks.named("jar") }
-                dependsOn(jar)
-
-                val paths = plugins
-                    .flatMap { it.ownSourceSets }
-                    .map { set -> set.map { if (sources) it.allSource else it.output } }
+                val paths = platforms
+                    .map { it.sourceSets.map { sets -> sets.map { set -> if (sources) set.allSource else set.output } } }
                 from(paths)
 
                 if (!sources) {

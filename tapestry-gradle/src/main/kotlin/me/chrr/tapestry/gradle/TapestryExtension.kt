@@ -1,6 +1,6 @@
 package me.chrr.tapestry.gradle
 
-import me.chrr.tapestry.gradle.loader.Platform
+import me.chrr.tapestry.gradle.platform.PlatformType
 import org.gradle.api.Project
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.model.ObjectFactory
@@ -45,7 +45,6 @@ abstract class TapestryExtension(objects: ObjectFactory) {
 
     open class Versions @Inject constructor(objects: ObjectFactory) {
         val minecraft = objects.property<String>()
-        val neoform = objects.property<String>()
         val fabricLoader = objects.property<String>()
         val neoforge = objects.property<String>()
     }
@@ -83,11 +82,11 @@ abstract class TapestryExtension(objects: ObjectFactory) {
         private val fabricMixinConfigs = objects.listProperty<String>()
         private val neoforgeMixinConfigs = objects.listProperty<String>()
 
-        fun mixinConfigs(platform: Platform) =
+        fun mixinConfigs(platform: PlatformType) =
             when (platform) {
-                Platform.Common -> mixinConfigs
-                Platform.Fabric -> fabricMixinConfigs
-                Platform.NeoForge -> neoforgeMixinConfigs
+                PlatformType.Common -> mixinConfigs
+                PlatformType.Fabric -> fabricMixinConfigs
+                PlatformType.NeoForge -> neoforgeMixinConfigs
             }
     }
 
