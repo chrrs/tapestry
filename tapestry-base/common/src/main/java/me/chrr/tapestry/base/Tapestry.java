@@ -35,10 +35,10 @@ public class Tapestry {
 
     // -- Platform adapter needs to be initialised here, so the slightly awkward formatting is needed.
     public static final Logger LOGGER = LogManager.getLogger("Tapestry");
-    public static final PlatformMethods PLATFORM_METHODS = implementation(PlatformMethods.class, id("platform_methods"));
+    public static final PlatformMethods PLATFORM_METHODS = implementation(Identifier.fromNamespaceAndPath("tapestry", "platform_methods"));
 
-    public static <T> T implementation(Class<T> clazz, Identifier identifier) {
-        List<Class<T>> classes = PLATFORM_ADAPTER.findImplementations(clazz, identifier);
+    public static <T> T implementation(Identifier identifier) {
+        List<Class<T>> classes = PLATFORM_ADAPTER.findImplementations(identifier);
         Validate.isTrue(!classes.isEmpty(), "No entrypoints found for " + identifier);
         Validate.isTrue(classes.size() == 1, "More than one entrypoint found for " + identifier);
 
@@ -59,9 +59,5 @@ public class Tapestry {
         } catch (ClassNotFoundException ignored) {
             return false;
         }
-    }
-
-    private static Identifier id(String path) {
-        return Identifier.fromNamespaceAndPath("tapestry", path);
     }
 }

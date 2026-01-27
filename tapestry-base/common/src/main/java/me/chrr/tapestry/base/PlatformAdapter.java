@@ -7,5 +7,5 @@ import java.util.List;
 
 @NullMarked
 public interface PlatformAdapter {
-    <T> List<Class<T>> findImplementations(Class<T> clazz, Identifier identifier);
+    <T> List<Class<T>> findImplementations(Identifier identifier);
 }

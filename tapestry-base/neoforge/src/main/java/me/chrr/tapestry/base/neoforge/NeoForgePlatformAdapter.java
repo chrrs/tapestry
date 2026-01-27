@@ -16,7 +16,7 @@ import java.util.List;
 public class NeoForgePlatformAdapter implements PlatformAdapter {
     @Override
     @SuppressWarnings("unchecked")
-    public <T> List<Class<T>> findImplementations(Class<T> clazz, Identifier identifier) {
+    public <T> List<Class<T>> findImplementations(Identifier identifier) {
         for (IModInfo mod : ModList.get().getMods()) {
             try {
                 Object tapestry = mod.getModProperties().get("tapestry");
@@ -34,9 +34,7 @@ public class NeoForgePlatformAdapter implements PlatformAdapter {
                 List<String> list = (List<String>) array;
                 List<Class<T>> out = new ArrayList<>(list.size());
                 for (String name : list) {
-                    Class<?> impl = Class.forName(name);
-                    if (clazz.isAssignableFrom(impl))
-                        out.add((Class<T>) impl);
+                    out.add((Class<T>) Class.forName(name));
                 }
 
                 return out;

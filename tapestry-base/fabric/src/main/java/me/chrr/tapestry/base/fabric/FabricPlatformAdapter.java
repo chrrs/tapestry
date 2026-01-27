@@ -16,7 +16,7 @@ import java.util.List;
 public class FabricPlatformAdapter implements PlatformAdapter {
     @Override
     @SuppressWarnings("unchecked")
-    public <T> List<Class<T>> findImplementations(Class<T> clazz, Identifier identifier) {
+    public <T> List<Class<T>> findImplementations(Identifier identifier) {
         for (ModContainer mod : FabricLoader.getInstance().getAllMods()) {
             try {
                 CustomValue tapestry = mod.getMetadata().getCustomValue("tapestry");
@@ -34,9 +34,7 @@ public class FabricPlatformAdapter implements PlatformAdapter {
                 CustomValue.CvArray list = array.getAsArray();
                 List<Class<T>> out = new ArrayList<>(list.size());
                 for (int i = 0; i < list.size(); i++) {
-                    Class<?> impl = Class.forName(list.get(i).getAsString());
-                    if (clazz.isAssignableFrom(impl))
-                        out.add((Class<T>) impl);
+                    out.add((Class<T>) Class.forName(list.get(i).getAsString()));
                 }
 
                 return out;
