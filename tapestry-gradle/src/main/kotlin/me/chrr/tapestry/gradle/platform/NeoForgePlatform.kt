@@ -14,6 +14,7 @@ import org.gradle.kotlin.dsl.the
 class NeoForgePlatform(tapestry: TapestryExtension, target: Project) : LoaderPlatform(tapestry, target) {
     override val type = PlatformType.NeoForge
     override val jijConfigurationName = "jarJar"
+    override val compatibleLoaders = listOf("neoforge")
 
     override fun applyPlatformPlugin() {
         super.applyPlatformPlugin()

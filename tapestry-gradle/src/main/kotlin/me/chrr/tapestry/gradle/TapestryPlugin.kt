@@ -4,6 +4,9 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import me.chrr.tapestry.gradle.jij.PrepareJiJJarsTask
 import me.chrr.tapestry.gradle.platform.*
+import me.modmuss50.mpp.ModPublishExtension
+import me.modmuss50.mpp.MppPlugin
+import me.modmuss50.mpp.ReleaseType
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
@@ -13,10 +16,7 @@ import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.publish.internal.component.DefaultAdhocSoftwareComponent
 import org.gradle.jvm.tasks.Jar
-import org.gradle.kotlin.dsl.attributes
-import org.gradle.kotlin.dsl.create
-import org.gradle.kotlin.dsl.named
-import org.gradle.kotlin.dsl.register
+import org.gradle.kotlin.dsl.*
 
 val PLATFORM_ATTRIBUTE: Attribute<String> = Attribute.of("me.chrr.tapestry.platform", String::class.java)
 val GSON: Gson = GsonBuilder().setPrettyPrinting().create()
@@ -32,6 +32,11 @@ class TapestryPlugin : Plugin<Project> {
         target.plugins.apply(JavaBasePlugin::class.java)
         val component = DefaultAdhocSoftwareComponent("tapestry", target.objects)
         target.components.add(component)
+
+        // Apply the mod publishing plugin.
+        target.plugins.apply(MppPlugin::class.java)
+        val publishMods = target.the<ModPublishExtension>()
+        configurePublish(target, publishMods, tapestry)
 
         target.afterEvaluate {
             // Set a few of the options to values depending on the environment.
@@ -53,6 +58,10 @@ class TapestryPlugin : Plugin<Project> {
             val platforms = registerPlatforms(target, tapestry)
             createMergedJarTask(target, platforms, tapestry)
             createConfigurations(target, platforms, component)
+
+            // Finish configuring the mod publishing plugin.
+            publishMods.file.set(target.tasks.named<Jar>("mergedJar").flatMap { it.archiveFile })
+            publishMods.modLoaders.set(platforms.filterIsInstance<LoaderPlatform>().flatMap { it.compatibleLoaders })
         }
     }
 
@@ -81,8 +90,8 @@ class TapestryPlugin : Plugin<Project> {
         ).flatten()
 
         // Register the common platforms with all the loader platforms.
-        val loaders = platforms.mapNotNull { it as? LoaderPlatform }
-        val commons = platforms.mapNotNull { it as? CommonPlatform }
+        val loaders = platforms.filterIsInstance<LoaderPlatform>()
+        val commons = platforms.filterIsInstance<CommonPlatform>()
 
         for (platform in commons)
             loaders.forEach { it.commonPlatforms.add(platform) }
@@ -193,5 +202,53 @@ class TapestryPlugin : Plugin<Project> {
         root.tasks.named("build") { dependsOn(mergedJar) }
 
         createTask("mergedSourcesJar", true)
+    }
+
+    fun configurePublish(root: Project, publishMods: ModPublishExtension, tapestry: TapestryExtension) {
+        // Configure a dry run if the env variable is set.
+        val isDryRun = System.getenv("PUBLISH_DRY_RUN") != null
+        publishMods.dryRun.set(isDryRun)
+
+        if (isDryRun) {
+            // If we do have a dry run, let's set some default values.
+            tapestry.publish.modrinth.convention("[unset]")
+            tapestry.publish.curseforge.convention("[unset]")
+            tapestry.publish.changelog.convention("[unset]")
+        } else if (!tapestry.isRelease()) {
+            root.tasks.named("publishMods") {
+                // FIXME: this is not the best place to throw an exception, but I don't know where else to do it.
+                throw IllegalStateException(
+                    "Publishing mods can only be done with the environment variable RELEASE=1, " +
+                            "or perform a dry run using PUBLISH_DRY_RUN=1."
+                )
+            }
+        }
+
+        // Set some basic release options from the mod info.
+        publishMods.displayName.set(tapestry.info.version.zip(tapestry.versions.minecraft) { a, b -> "$a - Minecraft $b" })
+        publishMods.version.set(tapestry.info.version)
+        publishMods.changelog.set(tapestry.publish.changelog)
+
+        // Set platform-specific properties.
+        publishMods.modrinth {
+            projectId.set(tapestry.publish.modrinth)
+            accessToken.set(root.providers.environmentVariable("MODRINTH_TOKEN"))
+            minecraftVersions.addAll(tapestry.depends.minecraft)
+        }
+
+        publishMods.curseforge {
+            projectId.set(tapestry.publish.curseforge)
+            accessToken.set(root.providers.environmentVariable("CURSEFORGE_TOKEN"))
+            minecraftVersions.addAll(tapestry.depends.minecraft)
+        }
+
+        // Set the release type based on the version.
+        publishMods.type.set(tapestry.info.version.map {
+            when {
+                it.contains("alpha") -> ReleaseType.ALPHA
+                it.contains("beta") -> ReleaseType.BETA
+                else -> ReleaseType.STABLE
+            }
+        })
     }
 }

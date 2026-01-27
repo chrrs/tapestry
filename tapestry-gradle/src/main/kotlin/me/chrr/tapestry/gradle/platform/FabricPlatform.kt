@@ -12,6 +12,7 @@ import org.gradle.kotlin.dsl.*
 class FabricPlatform(tapestry: TapestryExtension, target: Project) : LoaderPlatform(tapestry, target) {
     override val type = PlatformType.Fabric
     override val jijConfigurationName = "include"
+    override val compatibleLoaders = listOf("fabric", "quilt")
 
     override fun applyPlatformPlugin() {
         super.applyPlatformPlugin()

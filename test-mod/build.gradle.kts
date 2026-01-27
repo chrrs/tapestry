@@ -11,7 +11,7 @@ tapestry {
 
     info {
         id = "tapestry_test_mod"
-        version = "${rootProject.version}"
+        version = "0.0.0-alpha"
         name = "Tapestry Test Mod"
         license = "MIT"
     }
@@ -23,5 +23,11 @@ tapestry {
     game {
         runDir = file("../run")
         username = "chrrz"
+    }
+
+    publish {
+        readChangelogFrom(file("CHANGELOG.md"))
+        modrinth = "abc123"
+        curseforge = "abc123"
     }
 }

@@ -10,6 +10,7 @@ import org.gradle.kotlin.dsl.project
 abstract class LoaderPlatform(tapestry: TapestryExtension, target: Project) : Platform(tapestry, target) {
     val commonPlatforms = target.objects.listProperty<CommonPlatform>()
     abstract val jijConfigurationName: String
+    abstract val compatibleLoaders: List<String>
 
     override fun applyPlatformPlugin() {
         super.applyPlatformPlugin()

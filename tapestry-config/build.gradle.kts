@@ -35,12 +35,4 @@ tapestry {
         runDir = file("../run")
         username = "chrrz"
     }
-
-    publish {
-        readChangelogFrom(file("CHANGELOG.md"))
-        mergedJar = true
-
-        modrinth = "abc123"
-        curseforge = "abc123"
-    }
 }

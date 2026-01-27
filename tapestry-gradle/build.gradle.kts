@@ -32,6 +32,7 @@ dependencies {
     fun plugin(id: String, version: String) = "$id:$id.gradle.plugin:$version"
     implementation(plugin("net.fabricmc.fabric-loom", "1.15.2"))
     implementation(plugin("net.neoforged.moddev", "2.0.139"))
+    implementation(plugin("me.modmuss50.mod-publish-plugin", "1.1.0"))
 }
 
 sourceSets {

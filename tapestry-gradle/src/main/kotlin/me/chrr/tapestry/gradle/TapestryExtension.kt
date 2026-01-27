@@ -102,7 +102,6 @@ abstract class TapestryExtension(objects: ObjectFactory) {
 
     open class Publish @Inject constructor(private val info: Info, objects: ObjectFactory) {
         val changelog = objects.property<String>()
-        val mergedJar = objects.property<Boolean>()
         val modrinth = objects.property<String>()
         val curseforge = objects.property<String>()
 
