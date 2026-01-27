@@ -25,7 +25,7 @@ class AccessTransformer {
 
     data class Rule(var visibility: Visibility, var final: FinalModifier?) {
         fun merge(visibility: Visibility? = null, final: FinalModifier? = null) {
-            if (visibility != null && (this.visibility == null || this.visibility!! < visibility))
+            if (visibility != null && this.visibility < visibility)
                 this.visibility = visibility
             if (final != null && (this.final == null || this.final!! < final))
                 this.final = final
