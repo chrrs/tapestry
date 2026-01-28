@@ -10,6 +10,7 @@ import me.modmuss50.mpp.ReleaseType
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.type.ArtifactTypeDefinition
 import org.gradle.api.attributes.*
 import org.gradle.api.component.AdhocComponentWithVariants
 import org.gradle.api.file.DuplicatesStrategy
@@ -109,6 +110,7 @@ class TapestryPlugin : Plugin<Project> {
                 attributes.attribute(Usage.USAGE_ATTRIBUTE, root.objects.named(usage))
                 attributes.attribute(Category.CATEGORY_ATTRIBUTE, root.objects.named(Category.LIBRARY))
                 attributes.attribute(Bundling.BUNDLING_ATTRIBUTE, root.objects.named(Bundling.EXTERNAL))
+                attributes.attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, ArtifactTypeDefinition.JAR_TYPE)
 
                 isCanBeConsumed = true
                 isCanBeResolved = false

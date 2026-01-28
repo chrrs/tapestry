@@ -2,8 +2,8 @@ package me.chrr.tapestry.gradle.jij
 
 import me.chrr.tapestry.gradle.GSON
 import me.chrr.tapestry.gradle.PLATFORM_ATTRIBUTE
-import me.chrr.tapestry.gradle.platform.PlatformType
 import me.chrr.tapestry.gradle.model.FabricModJson
+import me.chrr.tapestry.gradle.platform.PlatformType
 import net.neoforged.moddev.shadow.net.neoforged.jarjar.metadata.*
 import net.neoforged.moddev.shadow.org.apache.maven.artifact.versioning.DefaultArtifactVersion
 import net.neoforged.moddev.shadow.org.apache.maven.artifact.versioning.VersionRange
@@ -46,6 +46,10 @@ open class PrepareJiJJarsTask : DefaultTask() {
 
         val view = configuration.map { configuration ->
             configuration.incoming.artifactView {
+                @Suppress("UnstableApiUsage")
+                withVariantReselection()
+
+                // Prefer the JAR artifact if it's available.
                 attributes.attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, ArtifactTypeDefinition.JAR_TYPE)
 
                 // If we're on the common platform, clear the platform attribute so we get the merged JAR.
