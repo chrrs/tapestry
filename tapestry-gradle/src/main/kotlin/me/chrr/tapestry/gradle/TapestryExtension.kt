@@ -31,7 +31,7 @@ abstract class TapestryExtension(objects: ObjectFactory) {
     fun publish(f: Publish.() -> Unit) = publish.apply(f)
 
     fun Project.prop(name: String): Provider<String> =
-        project.providers.gradleProperty(name)
+        this.providers.provider { this.property(name) as String }
 
     internal fun isCI() = System.getenv("CI") != null
     internal fun isRelease() = System.getenv("RELEASE") != null
