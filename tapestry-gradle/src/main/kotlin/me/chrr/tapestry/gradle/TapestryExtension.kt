@@ -72,6 +72,7 @@ abstract class TapestryExtension(objects: ObjectFactory) {
         val issues = objects.property<String>()
 
         val icon = objects.property<String>()
+        val banner = objects.property<String>()
         val parentMod = objects.property<String>()
         val isLibrary = objects.property<Boolean>().apply { convention(false) }
     }
@@ -112,14 +113,14 @@ abstract class TapestryExtension(objects: ObjectFactory) {
                 var changes = file.readText()
 
                 val versionHeader = Regex($$"""(?:^|\n)\s*##\s*$${Regex.escape(version)}\s*(?:$|\n)""")
-                val anyHeader = Regex("""(?:^|\n)\s*##.*(?:$|\n)""")
+                val anyHeader = Regex("""(?:^|\n)\s*##.*""")
 
-                val start = versionHeader.find(changes, 0)?.range?.last
+                val start = versionHeader.find(changes)?.range?.last
                     ?: throw IllegalArgumentException("${file.name} does not contain a changelog entry for version $version")
                 changes = changes.substring(start + 1)
 
                 anyHeader.find(changes)?.let {
-                    changes = changes.substring(0, it.range.last + 1)
+                    changes = changes.substring(0, it.range.first)
                 }
 
                 return@map changes.trim()

@@ -2,8 +2,8 @@ package me.chrr.tapestry.gradle.manifest
 
 import com.moandjiezana.toml.TomlWriter
 import me.chrr.tapestry.gradle.TapestryExtension
-import me.chrr.tapestry.gradle.platform.PlatformType
 import me.chrr.tapestry.gradle.model.NeoForgeModsToml
+import me.chrr.tapestry.gradle.platform.PlatformType
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputFile
@@ -37,7 +37,7 @@ open class GenerateNeoForgeManifestTask : GenerateManifestTask() {
             mod.credits = info.contributors.orNull
                 ?.let { if (it.isEmpty()) null else it }
                 ?.joinToString(", ")
-            mod.logoFile = info.icon.orNull
+            mod.logoFile = info.banner.orElse(info.icon).orNull
             mod.displayURL = info.url.orNull
         })
 
