@@ -137,11 +137,10 @@ class TapestryPlugin : Plugin<Project> {
                 outgoing.variants.register(type.name) {
                     attributes.attribute(PLATFORM_ATTRIBUTE, type.name.lowercase())
 
-                    platforms
-                        .mapNotNull { it.target.tasks.findByName(task) }
-                        .forEach {
-                            artifact(it) { classifier = it.name.lowercase() + suffix }
-                        }
+                    for (platform in platforms) {
+                        val task = platform.target.tasks.findByName(task) ?: continue
+                        artifact(task) { classifier = platform.target.name.lowercase() + suffix }
+                    }
                 }
             }
 
