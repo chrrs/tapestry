@@ -25,6 +25,9 @@ abstract class LoaderPlatform(tapestry: TapestryExtension, target: Project) : Pl
                 // Copy all the JiJ dependencies from this project to the target jij configuration.
                 dependencies.addAllLater(project.configurations.named("jij").map { it.incoming.dependencies })
             }
+
+            // Copy all the repositories of the other platform to this project.
+            target.repositories.addAll(commonPlatforms.get().flatMap { it.target.repositories.toList() })
         }
 
         // Add all source sets of the other platform to this project.
