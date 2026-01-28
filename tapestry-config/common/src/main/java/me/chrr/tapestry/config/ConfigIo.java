@@ -55,13 +55,17 @@ public enum ConfigIo {
 
             UpgradeRewriter upgradeRewriter = config.getUpgradeRewriter();
             if (upgradeRewriter != null && object.has("version")) {
-                int version = object.get("version").getAsInt();
-                upgradeRewriter.upgrade(version, object);
-                object.addProperty("version", upgradeRewriter.getLatestVersion());
-                LOGGER.info("Upgraded config at '{}' to version {}", path, upgradeRewriter.getLatestVersion());
+                int currentVersion = object.get("version").getAsInt();
 
-                String json = GSON.toJson(object);
-                Files.writeString(path, json);
+                if (currentVersion < upgradeRewriter.getLatestVersion()) {
+                    upgradeRewriter.upgrade(currentVersion, object);
+                    object.addProperty("version", upgradeRewriter.getLatestVersion());
+
+                    String json = GSON.toJson(object);
+                    Files.writeString(path, json);
+
+                    LOGGER.info("Upgraded config at '{}' to version {}", path, upgradeRewriter.getLatestVersion());
+                }
             }
 
             for (Option<?> option : config.getOptions()) {
