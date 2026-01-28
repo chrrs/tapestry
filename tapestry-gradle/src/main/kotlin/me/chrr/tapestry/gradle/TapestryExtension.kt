@@ -22,6 +22,8 @@ abstract class TapestryExtension(objects: ObjectFactory) {
     val game = objects.newInstance<Game>(objects)
     val publish = objects.newInstance<Publish>(info, objects)
 
+    val qualifiedVersion: Provider<String> = info.version.zip(versions.minecraft) { a, b -> "$a+mc$b" }
+
     fun projects(f: Projects.() -> Unit) = projects.apply(f)
     fun versions(f: Versions.() -> Unit) = versions.apply(f)
     fun info(f: Info.() -> Unit) = info.apply(f)
@@ -37,10 +39,9 @@ abstract class TapestryExtension(objects: ObjectFactory) {
     internal fun isRelease() = System.getenv("RELEASE") != null
 
     internal fun applyArchiveName(task: AbstractArchiveTask, appendix: String?) {
-        val version = info.version.get() + "+mc" + versions.minecraft.get()
         task.archiveBaseName.set(info.id)
         appendix?.let { task.archiveAppendix.set(it) }
-        task.archiveVersion.set(version)
+        task.archiveVersion.set(qualifiedVersion)
     }
 
     open class Versions @Inject constructor(objects: ObjectFactory) {
