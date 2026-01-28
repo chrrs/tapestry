@@ -4,7 +4,9 @@ import me.chrr.tapestry.base.PlatformMethods;
 import me.chrr.tapestry.gradle.annotation.Implementation;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.neoforgespi.language.IModFileInfo;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
 
@@ -22,7 +24,16 @@ public class NeoForgePlatformMethods implements PlatformMethods {
     }
 
     @Override
-    public boolean isModLoaded(String id) {
-        return ModList.get().isLoaded(id);
+    public @Nullable String getModVersion(String modId) {
+        IModFileInfo modFile = ModList.get().getModFileById(modId);
+
+        if (modFile == null)
+            return null;
+        return modFile.versionString();
+    }
+
+    @Override
+    public boolean isModLoaded(String modId) {
+        return ModList.get().isLoaded(modId);
     }
 }

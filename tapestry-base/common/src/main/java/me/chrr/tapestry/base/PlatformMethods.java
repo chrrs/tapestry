@@ -1,6 +1,7 @@
 package me.chrr.tapestry.base;
 
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
 
@@ -10,5 +11,7 @@ public interface PlatformMethods {
 
     Path getGameDirectory();
 
-    boolean isModLoaded(String id);
+    @Nullable String getModVersion(String modId);
+
+    boolean isModLoaded(String modId);
 }
