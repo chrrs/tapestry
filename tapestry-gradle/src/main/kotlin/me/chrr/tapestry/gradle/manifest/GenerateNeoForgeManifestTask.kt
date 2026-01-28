@@ -29,7 +29,7 @@ open class GenerateNeoForgeManifestTask : GenerateManifestTask() {
 
         manifest.mods = listOf(NeoForgeModsToml.Mod().also { mod ->
             mod.modId = info.id.get()
-            mod.version = info.version.get()
+            mod.version = tapestry.get().effectiveVersion.get()
 
             mod.displayName = info.name.orNull
             mod.description = info.description.orNull

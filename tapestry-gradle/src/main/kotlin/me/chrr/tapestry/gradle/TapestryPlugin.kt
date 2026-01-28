@@ -40,14 +40,7 @@ class TapestryPlugin : Plugin<Project> {
         configurePublish(target, publishMods, tapestry)
 
         target.afterEvaluate {
-            // Set a few of the options to values depending on the environment.
-            val versionTag = when {
-                tapestry.isRelease() -> ""
-                tapestry.isCI() -> "-snapshot"
-                else -> "-local"
-            }
-            tapestry.info.version.set("${tapestry.info.version.get()}$versionTag")
-
+            // Set the game dir relative to the project dir by default.
             if (!tapestry.game.runDir.isPresent)
                 tapestry.game.runDir.set(target.projectDir.resolve("run"))
 

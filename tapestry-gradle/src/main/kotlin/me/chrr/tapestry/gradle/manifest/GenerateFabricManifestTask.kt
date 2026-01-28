@@ -5,8 +5,8 @@ import com.google.gson.JsonObject
 import me.chrr.tapestry.gradle.GSON
 import me.chrr.tapestry.gradle.TapestryExtension
 import me.chrr.tapestry.gradle.ifPresent
-import me.chrr.tapestry.gradle.platform.PlatformType
 import me.chrr.tapestry.gradle.model.FabricModJson
+import me.chrr.tapestry.gradle.platform.PlatformType
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputFile
@@ -25,7 +25,7 @@ open class GenerateFabricManifestTask : GenerateManifestTask() {
         val transform = tapestry.get().transform
 
         manifest.id = info.id.get()
-        manifest.version = info.version.get()
+        manifest.version = tapestry.get().effectiveVersion.get()
 
         manifest.name = info.name.orNull
         manifest.description = info.description.orNull

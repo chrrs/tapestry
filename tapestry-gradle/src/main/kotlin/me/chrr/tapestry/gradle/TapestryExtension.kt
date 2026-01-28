@@ -22,6 +22,7 @@ abstract class TapestryExtension(objects: ObjectFactory) {
     val game = objects.newInstance<Game>(objects)
     val publish = objects.newInstance<Publish>(info, objects)
 
+    val effectiveVersion: Provider<String> = info.version.map { "$it${getVersionTag()}" }
     val qualifiedVersion: Provider<String> = info.version.zip(versions.minecraft) { a, b -> "$a+mc$b" }
 
     fun projects(f: Projects.() -> Unit) = projects.apply(f)
@@ -37,6 +38,13 @@ abstract class TapestryExtension(objects: ObjectFactory) {
 
     internal fun isCI() = System.getenv("CI") != null
     internal fun isRelease() = System.getenv("RELEASE") != null
+
+    internal fun getVersionTag() =
+        when {
+            isRelease() -> ""
+            isCI() -> "-snapshot"
+            else -> "-local"
+        }
 
     internal fun applyArchiveName(task: AbstractArchiveTask, appendix: String?) {
         task.archiveBaseName.set(info.id)
