@@ -83,9 +83,9 @@ class TapestryPlugin : Plugin<Project> {
         val platforms = listOf(
             tapestry.projects.common.getPresentOr { listOf(target.project("common")) }
                 .map { CommonPlatform(tapestry, it) },
-            tapestry.projects.common.getPresentOr { listOf(target.project("fabric")) }
+            tapestry.projects.fabric.getPresentOr { listOf(target.project("fabric")) }
                 .map { FabricPlatform(tapestry, it) },
-            tapestry.projects.common.getPresentOr { listOf(target.project("neoforge")) }
+            tapestry.projects.neoforge.getPresentOr { listOf(target.project("neoforge")) }
                 .map { NeoForgePlatform(tapestry, it) },
         ).flatten()
 
@@ -225,7 +225,7 @@ class TapestryPlugin : Plugin<Project> {
 
         // Set some basic release options from the mod info.
         publishMods.displayName.set(tapestry.info.version.zip(tapestry.versions.minecraft) { a, b -> "$a - Minecraft $b" })
-        publishMods.version.set(tapestry.info.version)
+        publishMods.version.set(tapestry.qualifiedVersion)
         publishMods.changelog.set(tapestry.publish.changelog)
 
         // Set platform-specific properties.
