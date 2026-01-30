@@ -2,7 +2,9 @@
 
 > Useful utilities for multi-loader mod development.
 
-![Version](https://img.shields.io/github/v/release/chrrs/tapestry?include_prereleases&style=flat-square)
+![Version](https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fmaven.chrr.me%2Freleases%2Fme%2Fchrr%2Ftapestry%2Ftapestry-gradle%2Fmaven-metadata.xml&style=flat-square&label=gradle)
+![Version](https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fmaven.chrr.me%2Freleases%2Fme%2Fchrr%2Ftapestry%2Ftapestry-base%2Fmaven-metadata.xml&style=flat-square&label=base)
+![Version](https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fmaven.chrr.me%2Freleases%2Fme%2Fchrr%2Ftapestry%2Ftapestry-config%2Fmaven-metadata.xml&style=flat-square&label=config)
 ![Build status](https://img.shields.io/github/actions/workflow/status/chrrs/tapestry/build.yml?style=flat-square)
 
 For every mod developer, there comes a point in time where they get fed up with the status quo, and reinvent the world.
