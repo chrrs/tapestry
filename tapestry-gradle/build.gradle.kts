@@ -59,3 +59,15 @@ tasks {
         }
     }
 }
+
+publishing {
+    repositories {
+        maven("https://repo.repsy.io/chrrs/releases") {
+            name = "ChrrsReleases"
+            credentials {
+                username = System.getenv("MAVEN_USERNAME")
+                password = System.getenv("MAVEN_PASSWORD")
+            }
+        }
+    }
+}

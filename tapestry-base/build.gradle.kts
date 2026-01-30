@@ -1,5 +1,6 @@
 plugins {
     id("me.chrr.tapestry.gradle")
+    `maven-publish`
 }
 
 tapestry {
@@ -33,5 +34,24 @@ tapestry {
     game {
         runDir = file("../run")
         username = "chrrz"
+    }
+}
+
+publishing {
+    repositories {
+        maven("https://repo.repsy.io/chrrs/releases") {
+            name = "ChrrsReleases"
+            credentials {
+                username = System.getenv("MAVEN_USERNAME")
+                password = System.getenv("MAVEN_PASSWORD")
+            }
+        }
+    }
+
+    publications.register<MavenPublication>("mod") {
+        from(components["tapestry"])
+        groupId = rootProject.group as String
+        artifactId = project.name
+        version = tapestry.qualifiedVersion.get()
     }
 }
