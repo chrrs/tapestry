@@ -1,4 +1,4 @@
-name: Publish Gradle plugin
+name: Publish Mods
 
 on:
   workflow_dispatch:
@@ -31,10 +31,10 @@ jobs:
       - name: Update version in gradle.properties
         id: set-version
         run: |
-          sed -i "s/^plugin\.version=.*/plugin\.version=${{ github.event.inputs.version }}/" gradle.properties
+          sed -i "s/^tapestry\.version=.*/tapestry\.version=${{ github.event.inputs.version }}/" gradle.properties
 
       - name: Publish to Maven
-        run: ./gradlew tapestry-gradle:publishPluginMavenPublicationToChrrsReleasesRepository
+        run: ./gradlew publishModPublicationToChrrsReleasesRepository
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
