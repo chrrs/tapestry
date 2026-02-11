@@ -21,6 +21,10 @@ public class OptionProxy<T> {
         this.value = this.option.value.getDefaultValue();
     }
 
+    public boolean isDirty() {
+        return this.value != this.option.value.get();
+    }
+
     public boolean isChanged() {
         return this.value != this.option.value.getDefaultValue();
     }

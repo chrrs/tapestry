@@ -1,6 +1,7 @@
 package me.chrr.tapestry.config.gui.widget;
 
 import me.chrr.tapestry.config.gui.OptionProxy;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ActiveTextCollector;
 import net.minecraft.client.gui.GuiGraphics;
@@ -42,7 +43,12 @@ public abstract class OptionWidget<T> extends AbstractWidget {
 
     protected void renderOptionLabel(GuiGraphics graphics, int availableWidth) {
         ActiveTextCollector textCollector = graphics.textRendererForWidget(this, GuiGraphics.HoveredTextEffects.NONE);
-        textCollector.acceptScrolling(this.getMessage(),
+
+        Component message = this.getMessage();
+        if (this.optionProxy.isDirty())
+            message = Component.empty().append(message).append(" *").withStyle(ChatFormatting.ITALIC);
+
+        textCollector.acceptScrolling(message,
                 this.getX() + 2 + 4, this.getX() + 2 + 4, this.getX() + availableWidth - 2 - 4,
                 this.getY() + 2, this.getBottom() - 2);
     }
