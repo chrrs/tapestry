@@ -101,8 +101,22 @@ abstract class TapestryExtension(objects: ObjectFactory) {
     }
 
     open class Depends @Inject constructor(objects: ObjectFactory) {
-        // FIXME: use this.
         val minecraft = objects.listProperty<String>()
+
+        val fabric = objects.listProperty<Dependency>()
+        val neoforge = objects.listProperty<Dependency>()
+
+        fun fabric(id: String, version: String? = null, slug: String? = null, action: Dependency.() -> Unit = {}) =
+            fabric.add(Dependency(id, version, slug).apply(action))
+
+        fun neoforge(id: String, version: String? = null, slug: String? = null, action: Dependency.() -> Unit = {}) =
+            neoforge.add(Dependency(id, version, slug).apply(action))
+
+        class Dependency(val id: String, val version: String?, slug: String?) {
+            var modrinth: String? = slug
+            var curseforge: String? = slug
+            var optional: Boolean = false
+        }
     }
 
     open class Game @Inject constructor(objects: ObjectFactory) {

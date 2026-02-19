@@ -23,6 +23,7 @@ open class GenerateFabricManifestTask : GenerateManifestTask() {
         val manifest = FabricModJson()
         val info = tapestry.get().info
         val transform = tapestry.get().transform
+        val depends = tapestry.get().depends
 
         manifest.id = info.id.get()
         manifest.version = tapestry.get().effectiveVersion.get()
@@ -68,9 +69,22 @@ open class GenerateFabricManifestTask : GenerateManifestTask() {
 
         manifest.accessWidener = transform.classTweaker.orNull
 
-        // FIXME: set the minecraft dependency properly.
-        // FIXME: support custom dependencies.
-        manifest.depends = mapOf("minecraft" to "*")
+        val dependencies = mutableMapOf<String, String>()
+        manifest.depends = dependencies
+
+        depends.minecraft.ifPresent {
+            // FIXME: for now, skip the version dependency if it's not a full release.
+            if (it.size == 1 && !it[0].matches(Regex("\\d+(?:\\.\\d+)*")))
+                return@ifPresent
+
+            if (it.size == 1)
+                dependencies["minecraft"] = it[0]
+            else
+                dependencies["minecraft"] = ">=${it[0]} <=${it.last()}"
+        }
+
+        for (dependency in (depends.fabric.orNull ?: listOf()).filter { !it.optional })
+            dependencies[dependency.id] = dependency.version ?: "*"
 
         val file = outputFile.get().asFile
         file.parentFile.mkdirs()

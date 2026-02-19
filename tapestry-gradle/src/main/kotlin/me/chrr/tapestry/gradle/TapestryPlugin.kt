@@ -223,17 +223,26 @@ class TapestryPlugin : Plugin<Project> {
         publishMods.version.set(tapestry.qualifiedVersion)
         publishMods.changelog.set(tapestry.publish.changelog)
 
+        val dependencies = listOfNotNull(tapestry.depends.fabric.orNull, tapestry.depends.neoforge.orNull)
+            .flatten()
+
         // Set platform-specific properties.
         publishMods.modrinth {
             projectId.set(tapestry.publish.modrinth)
             accessToken.set(root.providers.environmentVariable("MODRINTH_TOKEN"))
             minecraftVersions.addAll(tapestry.depends.minecraft)
+
+            for (dependency in dependencies.filter { it.modrinth != null })
+                if (dependency.optional) optional(dependency.modrinth!!) else requires(dependency.modrinth!!)
         }
 
         publishMods.curseforge {
             projectId.set(tapestry.publish.curseforge)
             accessToken.set(root.providers.environmentVariable("CURSEFORGE_TOKEN"))
             minecraftVersions.addAll(tapestry.depends.minecraft)
+
+            for (dependency in dependencies.filter { it.curseforge != null })
+                if (dependency.optional) optional(dependency.curseforge!!) else requires(dependency.curseforge!!)
         }
 
         // Set the release type based on the version.

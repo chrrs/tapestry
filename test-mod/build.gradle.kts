@@ -18,6 +18,8 @@ tapestry {
 
     depends {
         minecraft = rootProject.prop("minecraft.compatible").map { it.split(",") }
+        fabric("fabric-api", slug = "fabric-api") { optional = true }
+        neoforge("unexisting") { optional = true }
     }
 
     game {

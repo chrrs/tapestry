@@ -2,6 +2,7 @@ package me.chrr.tapestry.gradle.manifest
 
 import com.moandjiezana.toml.TomlWriter
 import me.chrr.tapestry.gradle.TapestryExtension
+import me.chrr.tapestry.gradle.ifPresent
 import me.chrr.tapestry.gradle.model.NeoForgeModsToml
 import me.chrr.tapestry.gradle.platform.PlatformType
 import org.gradle.api.file.RegularFileProperty
@@ -23,6 +24,7 @@ open class GenerateNeoForgeManifestTask : GenerateManifestTask() {
         val manifest = NeoForgeModsToml()
         val info = tapestry.get().info
         val transform = tapestry.get().transform
+        val depends = tapestry.get().depends
 
         manifest.issueTrackerUrl = info.issues.orNull
         manifest.license = info.license.get()
@@ -45,13 +47,18 @@ open class GenerateNeoForgeManifestTask : GenerateManifestTask() {
             .flatMap { it.get() }
             .map { NeoForgeModsToml.Mixin(it) }
 
-        // FIXME: set the minecraft dependency properly.
-        // FIXME: support custom dependencies.
-        manifest.dependencies = mapOf(
-            info.id.get() to listOf(
-                NeoForgeModsToml.Dependency("minecraft", "[1,)")
-            )
-        )
+        val dependencies = mutableListOf<NeoForgeModsToml.Dependency>()
+        manifest.dependencies = mapOf(info.id.get() to dependencies)
+
+        depends.minecraft.ifPresent {
+            if (it.size == 1)
+                dependencies.add(NeoForgeModsToml.Dependency("minecraft", "[${it[0]}]"))
+            else
+                dependencies.add(NeoForgeModsToml.Dependency("minecraft", "[${it[0]}, ${it.last()}]"))
+        }
+
+        for (dependency in (depends.neoforge.orNull ?: listOf()).filter { !it.optional })
+            dependencies.add(NeoForgeModsToml.Dependency(dependency.id, dependency.version ?: "(,)"))
 
         manifest.modproperties = mapOf(
             info.id.get() to mapOf<String, Any>(
