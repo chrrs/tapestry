@@ -36,7 +36,14 @@ abstract class Platform(val tapestry: TapestryExtension, val target: Project) {
         target.plugins.apply(JavaLibraryPlugin::class.java)
         val java = target.the<JavaPluginExtension>()
 
-        sourceSets.convention(java.sourceSets.named("main").map { listOf(it) })
+        // FIXME: properly split environment source sets.
+        val main = java.sourceSets.named("main")
+        val client = java.sourceSets.register("client") {
+            compileClasspath += main.get().compileClasspath
+            compileClasspath += main.get().output
+        }
+
+        sourceSets.convention(client.zip(main) { a, b -> listOf(a, b) })
         generatedResourcesDir.convention(target.tapestryBuildDir.map { it.dir("generated") })
 
         val targetJavaVersion = 25
