@@ -38,7 +38,7 @@ class DependencyArtifact {
         val prefix = "${this.module.name}-${this.module.version}"
         if (this.file.name.startsWith(prefix)) {
             this.classifier = this.file.name.substring(prefix.length)
-                .substringBefore('.')
+                .substringBefore('.').ifBlank { null }
         } else {
             this.classifier = null
         }

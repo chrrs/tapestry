@@ -13,7 +13,7 @@ class FabricModJson {
     var description: String? = null
     var environment: String? = null
     var authors: List<String> = emptyList()
-    var contributors: List<String> = emptyList()
+    var contributors: List<String>? = null
     var license: String? = null
     var icon: String? = null
 
@@ -24,7 +24,7 @@ class FabricModJson {
 
     var accessWidener: String? = null
     var depends: Map<String, String> = emptyMap()
-    var jars: List<NestedJar> = emptyList()
+    var jars: List<NestedJar>? = null
 
 
     data class NestedJar(val file: String)

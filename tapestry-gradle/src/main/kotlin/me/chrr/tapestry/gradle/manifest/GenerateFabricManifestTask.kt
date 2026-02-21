@@ -32,24 +32,25 @@ open class GenerateFabricManifestTask : GenerateManifestTask() {
         manifest.description = info.description.orNull
         manifest.environment = info.environment.get().value
         manifest.authors = info.authors.get()
-        manifest.contributors = info.contributors.orNull ?: listOf()
+        manifest.contributors = info.contributors.orNull
         manifest.license = info.license.get()
         manifest.icon = info.icon.orNull
 
-        manifest.custom = JsonObject().apply {
-            add("modmenu", JsonObject().apply {
-                if (info.isLibrary.get())
-                    add("badges", gsonArray(listOf("library")))
-                info.parentMod.ifPresent { addProperty("parent", it) }
-            })
-
-            add("tapestry", JsonObject().apply {
-                add("implementations", JsonObject().apply {
-                    for (impl in ctx.implementations)
-                        add(impl.key, gsonArray(impl.value))
+        if (info.isLibrary.get() || info.parentMod.isPresent || ctx.implementations.isNotEmpty())
+            manifest.custom = JsonObject().apply {
+                add("modmenu", JsonObject().apply {
+                    if (info.isLibrary.get())
+                        add("badges", gsonArray(listOf("library")))
+                    info.parentMod.ifPresent { addProperty("parent", it) }
                 })
-            })
-        }
+
+                add("tapestry", JsonObject().apply {
+                    add("implementations", JsonObject().apply {
+                        for (impl in ctx.implementations)
+                            add(impl.key, gsonArray(impl.value))
+                    })
+                })
+            }
 
         manifest.contact = mutableMapOf<String, String>().also {
             if (info.url.isPresent) {
