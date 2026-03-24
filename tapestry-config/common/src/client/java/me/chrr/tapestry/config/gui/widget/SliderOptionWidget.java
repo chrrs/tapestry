@@ -4,7 +4,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import me.chrr.tapestry.config.gui.OptionProxy;
 import me.chrr.tapestry.config.value.Constraint;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.util.ARGB;
@@ -77,11 +77,11 @@ public abstract class SliderOptionWidget<N extends Number> extends OptionWidget<
     }
 
     @Override
-    protected void renderOptionWidget(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
+    protected void extractOptionWidget(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
         int sliderWidth = this.isHoveredOrFocused() ? SLIDER_WIDTH : SLIDER_WIDTH / 4;
         int availableWidth = this.getWidth() - sliderWidth - 4;
-        this.renderOptionLabel(graphics, availableWidth);
-        this.renderValueLabel(graphics, sliderWidth + 4, availableWidth);
+        this.extractOptionLabel(graphics, availableWidth);
+        this.extractValueLabel(graphics, sliderWidth + 4, availableWidth);
 
         int color = CommonColors.WHITE;
         int shadow = ARGB.scaleRGB(color, 0.25F);

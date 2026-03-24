@@ -1,6 +1,6 @@
 package me.chrr.tapestry.config.gui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
@@ -33,16 +33,16 @@ public class IconButton extends AbstractButton {
     }
 
     @Override
-    protected void renderContents(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        this.renderDefaultSprite(guiGraphics);
+    protected void extractContents(GuiGraphicsExtractor GuiGraphicsExtractor, int mouseX, int mouseY, float partialTick) {
+        this.extractDefaultSprite(GuiGraphicsExtractor);
 
         int color = this.isActive() ? CommonColors.WHITE : CommonColors.LIGHT_GRAY;
         int shadow = ARGB.scaleRGB(color, 0.25F);
 
         int x = getX() + getWidth() / 2 - 16 / 2;
         int y = getY() + getHeight() / 2 - 16 / 2;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, icon, x + 1, y + 1, 0, 0, 16, 16, 16, 16, shadow);
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, icon, x, y, 0, 0, 16, 16, 16, 16, color);
+        GuiGraphicsExtractor.blit(RenderPipelines.GUI_TEXTURED, icon, x + 1, y + 1, 0, 0, 16, 16, 16, 16, shadow);
+        GuiGraphicsExtractor.blit(RenderPipelines.GUI_TEXTURED, icon, x, y, 0, 0, 16, 16, 16, 16, color);
     }
 
     @Override

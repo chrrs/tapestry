@@ -4,7 +4,7 @@ import me.chrr.tapestry.config.gui.OptionProxy;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ActiveTextCollector;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.client.gui.components.WidgetTooltipHolder;
@@ -41,8 +41,8 @@ public abstract class OptionWidget<T> extends AbstractWidget {
         this.defaultButtonNarrationText(narrationElementOutput);
     }
 
-    protected void renderOptionLabel(GuiGraphics graphics, int availableWidth) {
-        ActiveTextCollector textCollector = graphics.textRendererForWidget(this, GuiGraphics.HoveredTextEffects.NONE);
+    protected void extractOptionLabel(GuiGraphicsExtractor graphics, int availableWidth) {
+        ActiveTextCollector textCollector = graphics.textRendererForWidget(this, GuiGraphicsExtractor.HoveredTextEffects.NONE);
 
         Component message = this.getMessage();
         if (this.optionProxy.isDirty())
@@ -53,12 +53,12 @@ public abstract class OptionWidget<T> extends AbstractWidget {
                 this.getY() + 2, this.getBottom() - 2);
     }
 
-    protected void renderValueLabel(GuiGraphics graphics, int rightOffset, int availableWidth) {
-        this.renderValueLabel(graphics, rightOffset, availableWidth, optionProxy.option.value.textProvider.apply(optionProxy.value));
+    protected void extractValueLabel(GuiGraphicsExtractor graphics, int rightOffset, int availableWidth) {
+        this.extractValueLabel(graphics, rightOffset, availableWidth, optionProxy.option.value.textProvider.apply(optionProxy.value));
     }
 
-    protected void renderValueLabel(GuiGraphics graphics, int rightOffset, int availableWidth, Component value) {
-        ActiveTextCollector textCollector = graphics.textRendererForWidget(this, GuiGraphics.HoveredTextEffects.NONE);
+    protected void extractValueLabel(GuiGraphicsExtractor graphics, int rightOffset, int availableWidth, Component value) {
+        ActiveTextCollector textCollector = graphics.textRendererForWidget(this, GuiGraphicsExtractor.HoveredTextEffects.NONE);
         textCollector.acceptScrolling(value,
                 this.getRight() - rightOffset - 2 - 4,
                 this.getRight() - rightOffset - availableWidth + 2 + 4,
@@ -67,15 +67,15 @@ public abstract class OptionWidget<T> extends AbstractWidget {
     }
 
     @Override
-    protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    protected void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         graphics.blitSprite(
                 RenderPipelines.GUI_TEXTURED, SPRITES.get(this.active, this.isHoveredOrFocused()),
                 this.getX(), this.getY(), this.getWidth(), this.getHeight(),
                 ARGB.white(this.alpha));
-        this.renderOptionWidget(graphics, mouseX, mouseY, partialTick);
+        this.extractOptionWidget(graphics, mouseX, mouseY, partialTick);
     }
 
-    protected abstract void renderOptionWidget(GuiGraphics graphics, int mouseX, int mouseY, float delta);
+    protected abstract void extractOptionWidget(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta);
 
     public static abstract class Clickable<T> extends OptionWidget<T> {
         public Clickable(OptionProxy<T> optionProxy) {
@@ -101,8 +101,8 @@ public abstract class OptionWidget<T> extends AbstractWidget {
         }
 
         @Override
-        protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-            super.renderWidget(graphics, mouseX, mouseY, partialTick);
+        protected void extractOptionWidget(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+            super.extractWidgetRenderState(graphics, mouseX, mouseY, partialTick);
             this.handleCursor(graphics);
         }
 

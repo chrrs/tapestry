@@ -4,7 +4,7 @@ import me.chrr.tapestry.config.Option;
 import me.chrr.tapestry.config.gui.widget.*;
 import me.chrr.tapestry.config.value.Constraint;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.ContainerObjectSelectionList;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -46,14 +46,14 @@ public class OptionList extends ContainerObjectSelectionList<OptionList.Entry> {
     }
 
     @Override
-    protected void renderListSeparators(GuiGraphics guiGraphics) {
+    protected void extractListSeparators(GuiGraphicsExtractor GuiGraphicsExtractor) {
         if (this.showHeaderSeparator) {
             Identifier headerSeparator = this.minecraft.level == null ? Screen.HEADER_SEPARATOR : Screen.INWORLD_HEADER_SEPARATOR;
-            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, headerSeparator, this.getX(), this.getY() - 2, 0f, 0f, this.getWidth(), 2, 32, 2);
+            GuiGraphicsExtractor.blit(RenderPipelines.GUI_TEXTURED, headerSeparator, this.getX(), this.getY() - 2, 0f, 0f, this.getWidth(), 2, 32, 2);
         }
 
         Identifier footerSeparator = this.minecraft.level == null ? Screen.FOOTER_SEPARATOR : Screen.INWORLD_FOOTER_SEPARATOR;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, footerSeparator, this.getX(), this.getBottom(), 0f, 0f, this.getWidth(), 2, 32, 2);
+        GuiGraphicsExtractor.blit(RenderPipelines.GUI_TEXTURED, footerSeparator, this.getX(), this.getBottom(), 0f, 0f, this.getWidth(), 2, 32, 2);
     }
 
     private static <T> OptionWidget<T> getWidgetForProxy(OptionProxy<T> optionProxy) {
@@ -95,9 +95,9 @@ public class OptionList extends ContainerObjectSelectionList<OptionList.Entry> {
             return List.of(this.widget);
         }
 
-        public void renderContent(GuiGraphics graphics, int x, int y, boolean bl, float delta) {
+        public void extractContent(GuiGraphicsExtractor graphics, int x, int y, boolean bl, float delta) {
             this.widget.setPosition(this.getContentX() + 2, this.getContentBottom() - minecraft.font.lineHeight);
-            this.widget.render(graphics, x, y, delta);
+            this.widget.extractRenderState(graphics, x, y, delta);
         }
 
         public List<? extends GuiEventListener> children() {
@@ -124,15 +124,15 @@ public class OptionList extends ContainerObjectSelectionList<OptionList.Entry> {
             return List.of(this.widget, this.reset);
         }
 
-        public void renderContent(GuiGraphics graphics, int x, int y, boolean isHovering, float delta) {
+        public void extractContent(GuiGraphicsExtractor graphics, int x, int y, boolean isHovering, float delta) {
             this.widget.setPosition(this.getContentX(), this.getContentY());
             this.widget.setSize(this.getContentWidth() - this.getContentHeight() - 4, this.getContentHeight());
-            this.widget.render(graphics, x, y, delta);
+            this.widget.extractRenderState(graphics, x, y, delta);
 
             this.reset.active = this.optionProxy.isChanged();
             this.reset.setPosition(this.getContentRight() - this.getContentHeight(), this.getContentY());
             this.reset.setSize(this.getContentHeight(), this.getContentHeight());
-            this.reset.render(graphics, x, y, delta);
+            this.reset.extractRenderState(graphics, x, y, delta);
         }
 
         public List<? extends GuiEventListener> children() {

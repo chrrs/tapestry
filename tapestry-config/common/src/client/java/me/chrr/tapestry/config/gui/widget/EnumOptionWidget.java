@@ -1,7 +1,7 @@
 package me.chrr.tapestry.config.gui.widget;
 
 import me.chrr.tapestry.config.gui.OptionProxy;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.InputWithModifiers;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.NullMarked;
@@ -29,8 +29,8 @@ public class EnumOptionWidget<T> extends OptionWidget.Clickable<T> {
     }
 
     @Override
-    protected void renderOptionWidget(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
-        this.renderOptionLabel(graphics, this.getWidth());
-        this.renderValueLabel(graphics, 0, this.getWidth(), nameByValue.get(optionProxy.value));
+    protected void extractOptionWidget(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+        this.extractOptionLabel(graphics, this.getWidth());
+        this.extractValueLabel(graphics, 0, this.getWidth(), nameByValue.get(optionProxy.value));
     }
 }
