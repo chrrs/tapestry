@@ -34,13 +34,5 @@ class CommonPlatform(tapestry: TapestryExtension, target: Project) : Platform(ta
 
         // Register the class tweaker specified in the tapestry extension.
         loom.accessWidenerPath.set(target.layout.file(super.findResource(tapestry.transform.classTweaker)))
-
-        // Add Mixin to the dependencies. Both of these already exist for Fabric and NeoForge,
-        // so we only need to add these to the common project.
-        target.repositories.maven("https://repo.spongepowered.org/maven/")
-        target.dependencies {
-            "compileOnly"("org.spongepowered:mixin:0.8.7")
-            "compileOnly"("io.github.llamalad7:mixinextras-common:0.5.3")
-        }
     }
 }
