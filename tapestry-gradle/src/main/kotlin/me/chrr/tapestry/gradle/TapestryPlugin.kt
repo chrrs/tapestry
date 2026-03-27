@@ -223,26 +223,33 @@ class TapestryPlugin : Plugin<Project> {
         publishMods.version.set(tapestry.qualifiedVersion)
         publishMods.changelog.set(tapestry.publish.changelog)
 
-        val dependencies = listOfNotNull(tapestry.depends.fabric.orNull, tapestry.depends.neoforge.orNull)
-            .flatten()
-
         // Set platform-specific properties.
-        publishMods.modrinth {
-            projectId.set(tapestry.publish.modrinth)
-            accessToken.set(root.providers.environmentVariable("MODRINTH_TOKEN"))
-            minecraftVersions.addAll(tapestry.depends.minecraft)
+        root.afterEvaluate {
+            val allDependencies = listOfNotNull(
+                tapestry.depends.fabric.orNull,
+                tapestry.depends.neoforge.orNull
+            ).flatten()
 
-            for (dependency in dependencies.filter { it.modrinth != null })
-                if (dependency.optional) optional(dependency.modrinth!!) else requires(dependency.modrinth!!)
-        }
+            val requiredDeps = allDependencies.filter { !it.optional }
+            val optionalDeps = allDependencies.filter { it.optional }
 
-        publishMods.curseforge {
-            projectId.set(tapestry.publish.curseforge)
-            accessToken.set(root.providers.environmentVariable("CURSEFORGE_TOKEN"))
-            minecraftVersions.addAll(tapestry.depends.minecraft)
+            publishMods.modrinth {
+                projectId.set(tapestry.publish.modrinth)
+                accessToken.set(root.providers.environmentVariable("MODRINTH_TOKEN"))
+                minecraftVersions.addAll(tapestry.depends.minecraft)
 
-            for (dependency in dependencies.filter { it.curseforge != null })
-                if (dependency.optional) optional(dependency.curseforge!!) else requires(dependency.curseforge!!)
+                requires(*requiredDeps.mapNotNull { it.modrinth }.distinct().toTypedArray())
+                optional(*optionalDeps.mapNotNull { it.modrinth }.distinct().toTypedArray())
+            }
+
+            publishMods.curseforge {
+                projectId.set(tapestry.publish.curseforge)
+                accessToken.set(root.providers.environmentVariable("CURSEFORGE_TOKEN"))
+                minecraftVersions.addAll(tapestry.depends.minecraft)
+
+                requires(*requiredDeps.mapNotNull { it.curseforge }.distinct().toTypedArray())
+                optional(*optionalDeps.mapNotNull { it.curseforge }.distinct().toTypedArray())
+            }
         }
 
         // Set the release type based on the version.
