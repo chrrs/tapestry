@@ -8,7 +8,7 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public class Option<T> {
     public @Nullable String serializedName;
-    public Value<T> value;
+    public final Value<T> value;
 
     public Component displayName = Component.empty();
     public @Nullable Component header;

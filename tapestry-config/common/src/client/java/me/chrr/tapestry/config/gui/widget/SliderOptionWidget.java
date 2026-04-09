@@ -11,8 +11,6 @@ import net.minecraft.util.ARGB;
 import net.minecraft.util.CommonColors;
 import org.jspecify.annotations.NullMarked;
 
-import java.util.Objects;
-
 @NullMarked
 public abstract class SliderOptionWidget<N extends Number> extends OptionWidget<N> {
     private static final int SLIDER_WIDTH = 96;
@@ -31,7 +29,7 @@ public abstract class SliderOptionWidget<N extends Number> extends OptionWidget<
 
         this.min = range.min();
         this.max = range.max();
-        this.step = Objects.requireNonNull(range.step());
+        this.step = range.step().orElseThrow();
     }
 
     @Override

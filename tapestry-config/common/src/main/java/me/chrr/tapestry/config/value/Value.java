@@ -4,6 +4,7 @@ import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -15,12 +16,12 @@ public abstract class Value<T> implements Supplier<T> {
     public boolean didSetTextProvider = false;
 
     public Value<T> range(T min, T max) {
-        this.constraint = new Constraint.Range<>(min, max, null);
+        this.constraint = new Constraint.Range<>(min, max, Optional.empty());
         return this;
     }
 
     public Value<T> range(T min, T max, T step) {
-        this.constraint = new Constraint.Range<>(min, max, step);
+        this.constraint = new Constraint.Range<>(min, max, Optional.of(step));
         return this;
     }
 
