@@ -20,6 +20,7 @@ public abstract class SliderOptionWidget<N extends Number> extends OptionWidget<
     private int sliderMinX = 0;
     private int sliderMaxX = 0;
     private boolean isSliding = false;
+    private boolean isHoveringSlider = false;
 
     public final N min;
     public final N max;
@@ -102,9 +103,14 @@ public abstract class SliderOptionWidget<N extends Number> extends OptionWidget<
         graphics.fill(thumbX + 1, thumbY + 1, thumbX + thumbWidth + 1, thumbY + thumbHeight + 1, shadow);
         graphics.fill(thumbX, thumbY, thumbX + thumbWidth, thumbY + thumbHeight, color);
 
+        isHoveringSlider = this.isHovered() && mouseX >= sliderMinX && mouseX <= sliderMaxX;
+    }
+
+    @Override
+    protected void handleCursor(GuiGraphicsExtractor graphics) {
         if (this.isSliding) {
             graphics.requestCursor(CursorTypes.RESIZE_EW);
-        } else if (this.isHovered() && mouseX >= sliderMinX && mouseX <= sliderMaxX) {
+        } else if (this.isHoveringSlider) {
             graphics.requestCursor(this.isActive() ? CursorTypes.POINTING_HAND : CursorTypes.NOT_ALLOWED);
         }
     }

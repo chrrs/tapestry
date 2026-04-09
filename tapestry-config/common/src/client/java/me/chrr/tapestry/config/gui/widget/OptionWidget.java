@@ -73,6 +73,7 @@ public abstract class OptionWidget<T> extends AbstractWidget {
                 this.getX(), this.getY(), this.getWidth(), this.getHeight(),
                 ARGB.white(this.alpha));
         this.extractOptionWidget(graphics, mouseX, mouseY, partialTick);
+        this.handleCursor(graphics);
     }
 
     protected abstract void extractOptionWidget(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta);
