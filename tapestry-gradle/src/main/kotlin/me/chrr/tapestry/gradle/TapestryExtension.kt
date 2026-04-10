@@ -101,7 +101,7 @@ abstract class TapestryExtension(objects: ObjectFactory) {
     }
 
     open class Depends @Inject constructor(objects: ObjectFactory) {
-        val minecraft = objects.property<String>()
+        val minecraft = objects.listProperty<String>()
 
         val fabric = objects.listProperty<Dependency>()
         val neoforge = objects.listProperty<Dependency>()
