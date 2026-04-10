@@ -12,6 +12,7 @@ import java.io.File
 open class ConvertClassTweakersTask : DefaultTask() {
     @InputFiles
     @SkipWhenEmpty
+    @PathSensitive(PathSensitivity.RELATIVE)
     val inputFiles = project.objects.listProperty<File>()
 
     @OutputFiles
