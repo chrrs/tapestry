@@ -16,6 +16,42 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Function;
 
+/// A configuration file with options derived from fields defined in the implementing class. The class itself can be
+/// annotated with a few options, changing its behaviour:
+///
+/// - {@link TranslationPrefix}: The prefix to prepend to all option names, header names and the config title, which
+///   will then be passed into {@link Component#translatable}.
+/// - {@link Title}: The title of the config class, which is used to determine the translation key of the GUI.
+/// - {@link SerializeName.Strategy}: The default name transformation strategy used for the configuration options.
+///
+/// ---
+///
+/// Any public, non-static, non-transient field with type {@link Value} will be reflected. These fields can be created
+/// using the helper methods {@link ReflectedConfig#value} and {@link ReflectedConfig#map}. Fields can also be annotated
+/// with various annotations to modify their behaviour:
+///
+/// - {@link Category}: Show a header above the annotated option, useful for separating categories.
+/// - {@link Hidden}: Hide the annotated option from the config GUI, while still serializing it.
+/// - {@link SerializeName} and {@link SerializeName.Strategy}: Change the serialized property name of the option. This
+///   is also used to determine the options translation key.
+///
+/// ---
+///
+/// A single method can be defined as the "upgrade rewriter" using the {@link UpgradeRewriter} annotation. This method
+/// will be called when the version property within the JSON config is lower than the defined latest version. In that
+/// case, the upgrade method will be called, at which point it can apply manual upgrade rules to make config files
+/// compatible with the current format defined by the fields.
+///
+/// A visual configuration GUI can be created through {@link me.chrr.tapestry.config.gui.TapestryConfigScreen}. For this
+/// to look right, you'll probably want to set up proper translations, which should be done using the
+/// {@link TranslationPrefix} annotation on the config class. See the annotation Javadoc for more information on that.
+///
+/// ---
+///
+/// To load a reflected config, the {@link ReflectedConfig#load} function should be used. The variable returned can ex.
+/// be stored in a public static variable in the mods main class.
+///
+/// @see <a href="https://github.com/chrrs/tapestry/blob/main/test-mod/common/src/main/java/me/chrr/tapestry/testmod/TestModConfig.java">Example config</a>
 @NullMarked
 public abstract class ReflectedConfig implements Config {
     private final List<Option<?>> options = new ArrayList<>();
@@ -27,11 +63,15 @@ public abstract class ReflectedConfig implements Config {
     private @Nullable TranslationPrefix translationPrefix = null;
 
     //region Value constructors
+
+    /// Define a new simple, tracked value, which will store its own value and is serialized to the config file. If it's
+    /// not loaded yet (or is initialised to be default), it will have the passed value.
     @SuppressWarnings("unchecked")
     protected <T> Value<T> value(T defaultValue) {
         return new TrackedValue<>((Class<T>) defaultValue.getClass(), defaultValue);
     }
 
+    /// Define a new mapped value, which is derived from another value and transformed using the given functions.
     @SuppressWarnings("unchecked")
     protected <U, V> Value<V> map(Value<U> value, Function<U, V> aToB, Function<V, U> bToA) {
         V defaultValue = aToB.apply(value.getDefaultValue());
@@ -42,6 +82,8 @@ public abstract class ReflectedConfig implements Config {
     //endregion
 
     //region Initialization & reflection
+
+    /// Reflect all the config options and attributes from the subclass.
     private void reflectOptions() {
         this.upgradeRewriter = reflectUpgradeRewriter();
         this.translationPrefix = getClass().getAnnotation(TranslationPrefix.class);
@@ -53,9 +95,9 @@ public abstract class ReflectedConfig implements Config {
             namingStrategy = serializeNameStrategyAnnotation.value();
 
         // Get the config screen title.
-        SerializeName serializeNameAnnotation = getClass().getAnnotation(SerializeName.class);
-        this.title = serializeNameAnnotation != null
-                ? getTranslatedName(serializeNameAnnotation.value() + ".title")
+        Title titleAnnotation = getClass().getAnnotation(Title.class);
+        this.title = titleAnnotation != null
+                ? getTranslatedName(titleAnnotation.value() + ".title")
                 : getTranslatedName("title");
 
         // Construct options for all public, non-static, non-transient fields.
@@ -66,6 +108,7 @@ public abstract class ReflectedConfig implements Config {
         }
     }
 
+    /// If it's present, try to reflect the upgrade rewriter from the subclass.
     private ConfigIo.@Nullable UpgradeRewriter reflectUpgradeRewriter() {
         ConfigIo.UpgradeRewriter upgradeRewriter = null;
 
@@ -101,6 +144,7 @@ public abstract class ReflectedConfig implements Config {
         return upgradeRewriter;
     }
 
+    /// Reflect a single config option from the given field.
     private Option<?> reflectOptionFromField(Field field, NamingStrategy defaultNamingStrategy) {
         try {
             Class<?> type = field.getType();
@@ -114,6 +158,7 @@ public abstract class ReflectedConfig implements Config {
         }
     }
 
+    /// Reflect a single config option from the given field, with the given resolved value instance.
     private <T> Option<T> reflectOptionFromValue(Value<T> value, Field field, NamingStrategy defaultNamingStrategy) {
         Option<T> option = new Option<>(value);
 
@@ -131,8 +176,8 @@ public abstract class ReflectedConfig implements Config {
                 if (value.constraint == null)
                     value.constraint = new Constraint.Values<>(Arrays.asList(valueType.getEnumConstants()));
 
-                if (!value.didSetTextProvider)
-                    value.textProvider = (v) -> getTranslatedName(
+                if (!value.didSetFormatter)
+                    value.formatter = (v) -> getTranslatedName(
                             "value." + namingStrategy.transform(valueType.getSimpleName())
                                     + "." + namingStrategy.transform(v.toString()));
             }
@@ -145,13 +190,15 @@ public abstract class ReflectedConfig implements Config {
             option.displayName = getTranslatedName("option." + namingStrategy.transform(field.getName()));
         }
 
-        Header header = field.getAnnotation(Header.class);
-        if (header != null)
-            option.header = getTranslatedName("category." + header.value());
+        Category category = field.getAnnotation(Category.class);
+        if (category != null)
+            option.header = getTranslatedName("category." + category.value());
 
         return option;
     }
 
+    /// Get the (possibly) translated display name for the given key, which is prefixed with the translation prefix if
+    /// it exists, and otherwise is returned as a literal text component.
     private Component getTranslatedName(String key) {
         if (this.translationPrefix == null) {
             return Component.literal(key);
@@ -161,16 +208,17 @@ public abstract class ReflectedConfig implements Config {
     }
     //endregion
 
-    //region Saving & loading
-    @Override
-    public void save() {
-        ConfigIo.saveToPath(this, Objects.requireNonNull(this.currentConfigPath));
-    }
+    //region Loading
 
+    /// Load a configuration file of the given class from the file in the game config dir with the given file name. If
+    /// it doesn't exist, this will resolve to the default configuration, and save that to the disk.
     public static <T extends ReflectedConfig> T load(Class<T> configClass, String file) {
         return load(configClass, file, List.of());
     }
 
+    /// Load a configuration file of the given class from the file in the game config dir with the given file name. If
+    /// this file isn't found, it will try to migrate the config from one of the given alias files. If none of those
+    /// exist either, this will resolve to the default configuration, and save that to the disk.
     public static <T extends ReflectedConfig> T load(Class<T> configClass, String file, List<String> aliases) {
         try {
             Constructor<T> constructor = configClass.getConstructor();
@@ -204,6 +252,11 @@ public abstract class ReflectedConfig implements Config {
     @Override
     public Component getTitle() {
         return this.title;
+    }
+
+    @Override
+    public void save() {
+        ConfigIo.saveToPath(this, Objects.requireNonNull(this.currentConfigPath));
     }
 
     @Override

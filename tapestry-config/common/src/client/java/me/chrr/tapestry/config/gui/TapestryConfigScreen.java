@@ -13,6 +13,7 @@ import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import org.jetbrains.annotations.ApiStatus;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -20,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+/// A config screen automatically generated for a {@link Config} instance.
 @NullMarked
 public class TapestryConfigScreen extends Screen {
     private final Config[] configs;
@@ -33,6 +35,8 @@ public class TapestryConfigScreen extends Screen {
     private @Nullable TabNavigationBar tabNavigationBar;
     private @Nullable OptionList optionList;
 
+    /// Create a new config screen for the given config(s). If multiple configs are passed, the screen will have
+    /// multiple tabs at the top, but the configs will be treated completely separately.
     public TapestryConfigScreen(Screen parent, Config... configs) {
         super(Component.empty());
         assert configs.length > 0;
@@ -103,6 +107,7 @@ public class TapestryConfigScreen extends Screen {
         return list;
     }
 
+    /// Apply the changes to the config values, save the changes to persist them, and go back to the parent screen.
     public void saveAndClose() {
         this.proxies.forEach(OptionProxy::apply);
         for (Config config : this.configs)
@@ -111,10 +116,14 @@ public class TapestryConfigScreen extends Screen {
         this.onClose();
     }
 
+    @Override
     public void onClose() {
         this.minecraft.setScreen(this.parent);
     }
 
+    /// A single config tab that's used when multiple configs are displayed on the same screen.
+    @NullMarked
+    @ApiStatus.Internal
     public record ConfigTab(Config config, OptionList list) implements Tab {
         @Override
         public Component getTabTitle() {

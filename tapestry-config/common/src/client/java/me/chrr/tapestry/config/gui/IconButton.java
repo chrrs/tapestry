@@ -10,11 +10,14 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.CommonColors;
+import org.jetbrains.annotations.ApiStatus;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.function.Consumer;
 
+/// A simple icon button, which renders the default button background, and a custom texture on top of it with a shadow.
 @NullMarked
+@ApiStatus.Internal
 public class IconButton extends AbstractButton {
     private final Consumer<IconButton> onPress;
     private final Identifier icon;

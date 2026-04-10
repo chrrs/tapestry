@@ -6,17 +6,21 @@ import me.chrr.tapestry.base.Tapestry;
 import net.minecraft.resources.Identifier;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforgespi.language.IModInfo;
+import org.jetbrains.annotations.ApiStatus;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.ArrayList;
 import java.util.List;
 
+/// The platform adapter for NeoForge. This will find implementations of interfaces using the "tapestry" object in a
+/// mod's custom properties in neoforge.mods.toml. It's not documented very clearly how custom mod properties work in
+/// NeoForge, but they are found under `modproperties.[mod-id].tapestry`.
 @NullMarked
-@SuppressWarnings("unused")
+@ApiStatus.Internal
 public class NeoForgePlatformAdapter implements PlatformAdapter {
     @Override
     @SuppressWarnings("unchecked")
-    public <T> List<Class<T>> findImplementations(Identifier identifier) {
+    public <T> List<Class<T>> findImplementations(Identifier iface) {
         for (IModInfo mod : ModList.get().getMods()) {
             try {
                 Object tapestry = mod.getModProperties().get("tapestry");
@@ -27,7 +31,7 @@ public class NeoForgePlatformAdapter implements PlatformAdapter {
                 if (implementations == null)
                     continue;
 
-                Object array = ((CommentedConfig) implementations).get(identifier.toString());
+                Object array = ((CommentedConfig) implementations).get(iface.toString());
                 if (array == null)
                     continue;
 

@@ -13,11 +13,14 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import org.jetbrains.annotations.ApiStatus;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.List;
 
+/// A widget that shows a list of configuration options, their headers and option widgets.
 @NullMarked
+@ApiStatus.Internal
 public class OptionList extends ContainerObjectSelectionList<OptionList.Entry> {
     private final boolean showHeaderSeparator;
 
@@ -28,12 +31,14 @@ public class OptionList extends ContainerObjectSelectionList<OptionList.Entry> {
         this.centerListVertically = false;
     }
 
+    /// Add a header to the end of the option list.
     public void addHeader(Component text) {
         int padding = this.children().isEmpty() ? 8 : 16;
         int height = padding + OptionList.this.minecraft.font.lineHeight;
         this.addEntry(new HeaderEntry(text), height);
     }
 
+    /// Add an option widget to the end of the option list, returning its proxy.
     public <T> OptionProxy<T> addOption(Option<T> option) {
         OptionProxy<T> proxy = new OptionProxy<>(option);
         this.addEntry(new OptionEntry<>(proxy));
@@ -56,12 +61,13 @@ public class OptionList extends ContainerObjectSelectionList<OptionList.Entry> {
         GuiGraphicsExtractor.blit(RenderPipelines.GUI_TEXTURED, footerSeparator, this.getX(), this.getBottom(), 0f, 0f, this.getWidth(), 2, 32, 2);
     }
 
+    /// Construct a suitable option widget for the given option, according to its type and constraint.
     private static <T> OptionWidget<T> getWidgetForProxy(OptionProxy<T> optionProxy) {
         Class<T> valueClass = optionProxy.option.value.getValueType();
 
         if (valueClass == boolean.class || valueClass == Boolean.class) {
             return unsafeCast(new BooleanOptionWidget(unsafeCast(optionProxy)));
-        } else if (optionProxy.option.value.constraint instanceof Constraint.Range<T> range && range.step() != null) {
+        } else if (optionProxy.option.value.constraint instanceof Constraint.Range<T> range && range.step().isPresent()) {
             if ((valueClass == int.class || valueClass == Integer.class)) {
                 return unsafeCast(new SliderOptionWidget.Int(unsafeCast(optionProxy), unsafeCast(range)));
             } else if ((valueClass == float.class || valueClass == Float.class)) {
@@ -76,14 +82,21 @@ public class OptionList extends ContainerObjectSelectionList<OptionList.Entry> {
         }
     }
 
+    /// Cast the given value from V to T without compile-time checks. Make sure this is right before using it!
     @SuppressWarnings("unchecked")
     private static <T, V> T unsafeCast(V value) {
         return (T) value;
     }
 
+    /// A convenience "type alias" for a single entry within the option list.
+    @NullMarked
+    @ApiStatus.Internal
     protected abstract static class Entry extends ContainerObjectSelectionList.Entry<Entry> {
     }
 
+    /// An entry in the option list that displays a simple header.
+    @NullMarked
+    @ApiStatus.Internal
     protected class HeaderEntry extends Entry {
         private final StringWidget widget;
 
@@ -91,20 +104,26 @@ public class OptionList extends ContainerObjectSelectionList<OptionList.Entry> {
             this.widget = new StringWidget(text, minecraft.font);
         }
 
+        @Override
         public List<? extends NarratableEntry> narratables() {
             return List.of(this.widget);
         }
 
+        @Override
         public void extractContent(GuiGraphicsExtractor graphics, int x, int y, boolean bl, float delta) {
             this.widget.setPosition(this.getContentX() + 2, this.getContentBottom() - minecraft.font.lineHeight);
             this.widget.extractRenderState(graphics, x, y, delta);
         }
 
+        @Override
         public List<? extends GuiEventListener> children() {
             return List.of(this.widget);
         }
     }
 
+    /// An entry in the option list that displays the option widget for a single option, along with a reset button.
+    @NullMarked
+    @ApiStatus.Internal
     protected static class OptionEntry<T> extends Entry {
         private final OptionWidget<T> widget;
         private final OptionProxy<T> optionProxy;
@@ -117,13 +136,15 @@ public class OptionList extends ContainerObjectSelectionList<OptionList.Entry> {
             this.reset = new IconButton(0, 0, 0, 0,
                     Component.translatable("text.tapestry.config.reset_option"),
                     Identifier.fromNamespaceAndPath("tapestry_config", "textures/gui/reset.png"),
-                    (_) -> optionProxy.reset());
+                    (_) -> optionProxy.resetToDefault());
         }
 
+        @Override
         public List<? extends NarratableEntry> narratables() {
             return List.of(this.widget, this.reset);
         }
 
+        @Override
         public void extractContent(GuiGraphicsExtractor graphics, int x, int y, boolean isHovering, float delta) {
             this.widget.setPosition(this.getContentX(), this.getContentY());
             this.widget.setSize(this.getContentWidth() - this.getContentHeight() - 4, this.getContentHeight());
@@ -135,6 +156,7 @@ public class OptionList extends ContainerObjectSelectionList<OptionList.Entry> {
             this.reset.extractRenderState(graphics, x, y, delta);
         }
 
+        @Override
         public List<? extends GuiEventListener> children() {
             return List.of(this.widget, this.reset);
         }

@@ -1,15 +1,21 @@
 package me.chrr.tapestry.base;
 
+import me.chrr.tapestry.gradle.annotation.Implementation;
 import net.minecraft.resources.Identifier;
 import org.apache.commons.lang3.Validate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.ApiStatus;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.List;
 
+/// The main class of the Tapestry Base module. This is mainly used for finding platform implementations and other
+/// common platform methods.
 @NullMarked
 public class Tapestry {
+    /// The platform adapter for the current loader. Note that this can't be loaded using annotated implementations,
+    /// since they aren't initialized yet (that's the point of the adapters).
     private static final PlatformAdapter PLATFORM_ADAPTER;
 
     static {
@@ -33,22 +39,34 @@ public class Tapestry {
         }
     }
 
-    // -- Platform adapter needs to be initialised here, so the slightly awkward formatting is needed.
+    // -- Platform adapter needs to be initialised after this, so the slightly awkward formatting here is needed.
+
+    /// The logger for all Tapestry-related modules. This shouldn't be used by consuming mods.
+    @ApiStatus.Internal
     public static final Logger LOGGER = LogManager.getLogger("Tapestry");
+
+    /// Common platform method implementations that are often used in mods, see {@link PlatformMethods}.
     public static final PlatformMethods PLATFORM_METHODS = implementation(Identifier.fromNamespaceAndPath("tapestry", "platform_methods"));
 
-    public static <T> T implementation(Identifier identifier) {
-        List<Class<T>> classes = PLATFORM_ADAPTER.findImplementations(identifier);
-        Validate.isTrue(!classes.isEmpty(), "No entrypoints found for " + identifier);
-        Validate.isTrue(classes.size() == 1, "More than one entrypoint found for " + identifier);
+    private Tapestry() {
+    }
+
+    /// Find a platform implementation for the given interface identifier. When building using Tapestry Gradle,
+    /// implementations can be marked with the {@link Implementation} annotation, which will make them discoverable
+    /// using this method automatically.
+    public static <T> T implementation(Identifier iface) {
+        List<Class<T>> classes = PLATFORM_ADAPTER.findImplementations(iface);
+        Validate.isTrue(!classes.isEmpty(), "No entrypoints found for " + iface);
+        Validate.isTrue(classes.size() == 1, "More than one entrypoint found for " + iface);
 
         try {
             return classes.getFirst().getConstructor().newInstance();
         } catch (Exception exception) {
-            throw new RuntimeException("Couldn't instantiate implementation for " + identifier, exception);
+            throw new RuntimeException("Couldn't instantiate implementation for " + iface, exception);
         }
     }
 
+    /// Figure out if a JVM class with the given name is loaded in the current thread.
     private static boolean isClassLoaded(String name) {
         try {
             ClassLoader loader = Thread.currentThread().getContextClassLoader();

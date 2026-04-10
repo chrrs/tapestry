@@ -1,11 +1,14 @@
 package me.chrr.tapestry.config.value;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+/// A virtual value is a value that isn't serialized, but is get and set by calling a supplier and a consumer.
 @NullMarked
+@ApiStatus.Internal
 public class VirtualValue<T> extends Value<T> {
     private final Class<T> type;
     private final T defaultValue;
@@ -20,6 +23,11 @@ public class VirtualValue<T> extends Value<T> {
     }
 
     @Override
+    public T get() {
+        return this.getter.get();
+    }
+
+    @Override
     public void set(T value) {
         this.setter.accept(value);
     }
@@ -27,11 +35,6 @@ public class VirtualValue<T> extends Value<T> {
     @Override
     public T getDefaultValue() {
         return this.defaultValue;
-    }
-
-    @Override
-    public T get() {
-        return this.getter.get();
     }
 
     @Override

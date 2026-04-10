@@ -5,12 +5,15 @@ import me.chrr.tapestry.gradle.annotation.Implementation;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforgespi.language.IModFileInfo;
+import org.jetbrains.annotations.ApiStatus;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
 
+/// Implementation of common platform methods for Fabric, see {@link PlatformMethods}.
 @NullMarked
+@ApiStatus.Internal
 @Implementation("tapestry:platform_methods")
 public class NeoForgePlatformMethods implements PlatformMethods {
     @Override

@@ -9,9 +9,12 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.CommonColors;
+import org.jetbrains.annotations.ApiStatus;
 import org.jspecify.annotations.NullMarked;
 
+/// A slider option widget, with which you can edit an option easily within a specified range.
 @NullMarked
+@ApiStatus.Internal
 public abstract class SliderOptionWidget<N extends Number> extends OptionWidget<N> {
     private static final int SLIDER_WIDTH = 96;
 
@@ -120,6 +123,8 @@ public abstract class SliderOptionWidget<N extends Number> extends OptionWidget<
     protected abstract N incrementBySteps(N value, int steps);
 
 
+    @NullMarked
+    @ApiStatus.Internal
     public static class Int extends SliderOptionWidget<Integer> {
         public Int(OptionProxy<Integer> optionProxy, Constraint.Range<Integer> range) {
             super(optionProxy, range);
@@ -141,6 +146,8 @@ public abstract class SliderOptionWidget<N extends Number> extends OptionWidget<
         }
     }
 
+    @NullMarked
+    @ApiStatus.Internal
     public static class Float extends SliderOptionWidget<java.lang.Float> {
         public Float(OptionProxy<java.lang.Float> optionProxy, Constraint.Range<java.lang.Float> range) {
             super(optionProxy, range);

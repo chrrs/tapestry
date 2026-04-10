@@ -4,13 +4,16 @@ import me.chrr.tapestry.base.PlatformMethods;
 import me.chrr.tapestry.gradle.annotation.Implementation;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
+import org.jetbrains.annotations.ApiStatus;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.Optional;
 
+/// Implementation of common platform methods for Fabric, see {@link PlatformMethods}.
 @NullMarked
+@ApiStatus.Internal
 @Implementation("tapestry:platform_methods")
 public class FabricPlatformMethods implements PlatformMethods {
     @Override

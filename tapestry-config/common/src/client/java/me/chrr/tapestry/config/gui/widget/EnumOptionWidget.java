@@ -4,13 +4,16 @@ import me.chrr.tapestry.config.gui.OptionProxy;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.InputWithModifiers;
 import net.minecraft.network.chat.Component;
+import org.jetbrains.annotations.ApiStatus;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/// A simple boolean option widget, which cycles through the available options.
 @NullMarked
+@ApiStatus.Internal
 public class EnumOptionWidget<T> extends OptionWidget.Clickable<T> {
     private final List<T> values;
     private final Map<T, Component> nameByValue = new HashMap<>();
@@ -20,7 +23,7 @@ public class EnumOptionWidget<T> extends OptionWidget.Clickable<T> {
 
         this.values = values;
         for (T value : values)
-            this.nameByValue.put(value, optionProxy.option.value.textProvider.apply(value));
+            this.nameByValue.put(value, optionProxy.option.value.formatter.apply(value));
     }
 
     @Override

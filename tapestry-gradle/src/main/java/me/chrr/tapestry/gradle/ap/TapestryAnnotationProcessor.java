@@ -67,7 +67,8 @@ public class TapestryAnnotationProcessor extends AbstractProcessor {
                 };
 
                 assert annotation != null;
-                writer.append(annotation.value()).append(";").append(receiver).append("\n");
+                for (String id : annotation.value())
+                    writer.append(id).append(";").append(receiver).append("\n");
             }
         } catch (IOException e) {
             throw new RuntimeException("Failed to write entrypoints", e);

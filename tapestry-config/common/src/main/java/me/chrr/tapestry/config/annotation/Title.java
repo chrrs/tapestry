@@ -7,9 +7,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/// Hide the annotated option in the config screen. If the annotated option is tracked, it will still be serialized.
+/// Set the title translation key that is displayed in the generated config screen, see {@link TranslationPrefix}.
 @NullMarked
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-public @interface Hidden {
+@Target(ElementType.TYPE)
+public @interface Title {
+    String value();
 }

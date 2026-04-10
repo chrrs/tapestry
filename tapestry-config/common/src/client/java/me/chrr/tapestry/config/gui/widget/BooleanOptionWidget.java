@@ -5,9 +5,12 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.InputWithModifiers;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.CommonColors;
+import org.jetbrains.annotations.ApiStatus;
 import org.jspecify.annotations.NullMarked;
 
+/// A simple boolean option widget, which shows a checkbox on the right side.
 @NullMarked
+@ApiStatus.Internal
 public class BooleanOptionWidget extends OptionWidget.Clickable<Boolean> {
     public BooleanOptionWidget(OptionProxy<Boolean> optionProxy) {
         super(optionProxy);

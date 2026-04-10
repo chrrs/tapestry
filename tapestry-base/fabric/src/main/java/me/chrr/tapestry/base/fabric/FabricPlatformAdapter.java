@@ -6,17 +6,22 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.metadata.CustomValue;
 import net.minecraft.resources.Identifier;
+import org.jetbrains.annotations.ApiStatus;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.ArrayList;
 import java.util.List;
 
+/// The platform adapter for Fabric. This will find implementations of interfaces using the "tapestry" object in a mod's
+/// custom properties in fabric.mod.json, which is under `custom.tapestry`.
+///
+/// @see <a href="https://wiki.fabricmc.net/documentation:fabric_mod_json">fabric.mod.json documentation</a>
 @NullMarked
-@SuppressWarnings("unused")
+@ApiStatus.Internal
 public class FabricPlatformAdapter implements PlatformAdapter {
     @Override
     @SuppressWarnings("unchecked")
-    public <T> List<Class<T>> findImplementations(Identifier identifier) {
+    public <T> List<Class<T>> findImplementations(Identifier iface) {
         for (ModContainer mod : FabricLoader.getInstance().getAllMods()) {
             try {
                 CustomValue tapestry = mod.getMetadata().getCustomValue("tapestry");
@@ -27,7 +32,7 @@ public class FabricPlatformAdapter implements PlatformAdapter {
                 if (implementations == null)
                     continue;
 
-                CustomValue array = implementations.getAsObject().get(identifier.toString());
+                CustomValue array = implementations.getAsObject().get(iface.toString());
                 if (array == null)
                     continue;
 

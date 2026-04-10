@@ -16,9 +16,13 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
+import org.jetbrains.annotations.ApiStatus;
 import org.jspecify.annotations.NullMarked;
 
+/// An option widget allows the user to change a config option, according to its type and constraints. It renders as a
+/// normal Minecraft button, but with the option name at the left, and a widget at the right.
 @NullMarked
+@ApiStatus.Internal
 public abstract class OptionWidget<T> extends AbstractWidget {
     private static final WidgetSprites SPRITES = new WidgetSprites(
             Identifier.withDefaultNamespace("widget/button"),
@@ -41,6 +45,8 @@ public abstract class OptionWidget<T> extends AbstractWidget {
         this.defaultButtonNarrationText(narrationElementOutput);
     }
 
+    /// Render the option label at the left of the widget, with the given maximum width. If the option is dirty, this
+    /// will render the label in italic, and append a star after it.
     protected void extractOptionLabel(GuiGraphicsExtractor graphics, int availableWidth) {
         ActiveTextCollector textCollector = graphics.textRendererForWidget(this, GuiGraphicsExtractor.HoveredTextEffects.NONE);
 
@@ -53,10 +59,13 @@ public abstract class OptionWidget<T> extends AbstractWidget {
                 this.getY() + 2, this.getBottom() - 2);
     }
 
+    /// Render a simple value label at the given offset from the right, with the given available width. This will use
+    /// the formatter defined for the value to render it.
     protected void extractValueLabel(GuiGraphicsExtractor graphics, int rightOffset, int availableWidth) {
-        this.extractValueLabel(graphics, rightOffset, availableWidth, optionProxy.option.value.textProvider.apply(optionProxy.value));
+        this.extractValueLabel(graphics, rightOffset, availableWidth, optionProxy.option.value.formatter.apply(optionProxy.value));
     }
 
+    /// Render a simple value label at the given offset from the right, with the given available width.
     protected void extractValueLabel(GuiGraphicsExtractor graphics, int rightOffset, int availableWidth, Component value) {
         ActiveTextCollector textCollector = graphics.textRendererForWidget(this, GuiGraphicsExtractor.HoveredTextEffects.NONE);
         textCollector.acceptScrolling(value,
@@ -76,8 +85,13 @@ public abstract class OptionWidget<T> extends AbstractWidget {
         this.handleCursor(graphics);
     }
 
+    /// Render the contents of the option label with the given parameters. The background is already rendered, and
+    /// should not be drawn by this function.
     protected abstract void extractOptionWidget(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta);
 
+    /// The super class of an option widget that has a simple action when it is clicked.
+    @NullMarked
+    @ApiStatus.Internal
     public static abstract class Clickable<T> extends OptionWidget<T> {
         public Clickable(OptionProxy<T> optionProxy) {
             super(optionProxy);
@@ -107,6 +121,7 @@ public abstract class OptionWidget<T> extends AbstractWidget {
             this.handleCursor(graphics);
         }
 
+        /// Perform the operation that should happen when the widget is clicked.
         public abstract void onPress(InputWithModifiers input);
     }
 }
