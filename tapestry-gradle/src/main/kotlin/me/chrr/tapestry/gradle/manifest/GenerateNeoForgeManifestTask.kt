@@ -9,7 +9,9 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputFile
 import org.gradle.kotlin.dsl.property
+import org.gradle.work.DisableCachingByDefault
 
+@DisableCachingByDefault
 open class GenerateNeoForgeManifestTask : GenerateManifestTask() {
     @Internal
     val tapestry = project.objects.property<TapestryExtension>()
