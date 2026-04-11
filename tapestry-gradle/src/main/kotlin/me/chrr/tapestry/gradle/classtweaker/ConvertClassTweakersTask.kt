@@ -24,7 +24,7 @@ open class ConvertClassTweakersTask : DefaultTask() {
             .forEach { (inputFile, outputFile) ->
                 inputFile.bufferedReader().use { reader ->
                     val builder = AccessTransformerBuilder()
-                    ClassTweakerReader.create(builder).read(reader, "")
+                    ClassTweakerReader.create(builder).read(reader, "official")
                     val contents = builder.accessTransformer.build()
 
                     outputFile.parentFile.mkdirs()
@@ -35,11 +35,6 @@ open class ConvertClassTweakersTask : DefaultTask() {
 
     private class AccessTransformerBuilder : ClassTweakerVisitor {
         val accessTransformer = AccessTransformer()
-
-        override fun visitHeader(namespace: String) {
-            if (namespace != "official")
-                throw IllegalArgumentException("Class Tweaker namespace must be 'official'")
-        }
 
         override fun visitInjectedInterface(owner: String, iface: String, transitive: Boolean) =
             throw NotImplementedError("Injected interfaces in Class Tweakers are not supported")

@@ -15,19 +15,21 @@ abstract class LoaderPlatform(tapestry: TapestryExtension, target: Project) : Pl
     override fun applyPlatformPlugin() {
         super.applyPlatformPlugin()
 
+        target.configurations.matching { it.name == jijConfigurationName }.configureEach {
+            // Copy all the JiJ dependencies from common projects to this project.
+            dependencies.addAllLater(commonPlatforms.map { platforms ->
+                platforms.flatMap { it.target.configurations.getByName("jij").incoming.dependencies }
+            })
+
+            // Copy all the JiJ dependencies from this project to the target jij configuration.
+            dependencies.addAllLater(target.configurations.named("jij").map { it.incoming.dependencies })
+        }
+
+        // Copy all the repositories of the other platform to this project.
         target.afterEvaluate {
-            target.configurations.named(jijConfigurationName) {
-                // Copy all the JiJ dependencies from common projects to this project.
-                dependencies.addAllLater(commonPlatforms.map { platforms ->
-                    platforms.flatMap { it.target.configurations.getByName("jij").incoming.dependencies }
-                })
-
-                // Copy all the JiJ dependencies from this project to the target jij configuration.
-                dependencies.addAllLater(project.configurations.named("jij").map { it.incoming.dependencies })
-            }
-
-            // Copy all the repositories of the other platform to this project.
-            target.repositories.addAll(commonPlatforms.get().flatMap { it.target.repositories.toList() })
+            target.repositories.addAllLater(commonPlatforms.map { platforms ->
+                platforms.flatMap { it.target.repositories }
+            })
         }
 
         // Add all source sets of the other platform to this project.
