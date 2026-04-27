@@ -2,7 +2,6 @@ package me.chrr.tapestry.gradle.manifest
 
 import com.moandjiezana.toml.TomlWriter
 import me.chrr.tapestry.gradle.TapestryExtension
-import me.chrr.tapestry.gradle.ifPresent
 import me.chrr.tapestry.gradle.model.NeoForgeModsToml
 import me.chrr.tapestry.gradle.platform.PlatformType
 import org.gradle.api.file.RegularFileProperty
@@ -52,15 +51,11 @@ open class GenerateNeoForgeManifestTask : GenerateManifestTask() {
         val dependencies = mutableListOf<NeoForgeModsToml.Dependency>()
         manifest.dependencies = mapOf(info.id.get() to dependencies)
 
-        depends.minecraft.ifPresent {
-            if (it.size == 1)
-                dependencies.add(NeoForgeModsToml.Dependency("minecraft", "[${it[0]}]"))
-            else
-                dependencies.add(NeoForgeModsToml.Dependency("minecraft", "[${it[0]}, ${it.last()}]"))
+        dependencies.add(NeoForgeModsToml.Dependency("minecraft", depends.minecraft.version.toNeoForgeVersionString()))
+        for (dependency in depends.dependencies.get().filterNot { it.optional }) {
+            val modId = dependency.neoforge ?: continue
+            dependencies.add(NeoForgeModsToml.Dependency(modId, dependency.version.toNeoForgeVersionString()))
         }
-
-        for (dependency in (depends.neoforge.orNull ?: listOf()).filter { !it.optional })
-            dependencies.add(NeoForgeModsToml.Dependency(dependency.id, dependency.version ?: "(,)"))
 
         manifest.modproperties = mapOf(
             info.id.get() to mapOf<String, Any>(

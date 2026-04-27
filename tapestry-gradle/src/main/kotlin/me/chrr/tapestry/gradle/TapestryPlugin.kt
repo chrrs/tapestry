@@ -225,18 +225,22 @@ class TapestryPlugin : Plugin<Project> {
 
         // Set platform-specific properties.
         root.afterEvaluate {
-            val allDependencies = listOfNotNull(
-                tapestry.depends.fabric.orNull,
-                tapestry.depends.neoforge.orNull
-            ).flatten()
-
+            val allDependencies = tapestry.depends.dependencies.orNull ?: emptyList()
             val requiredDeps = allDependencies.filter { !it.optional }
             val optionalDeps = allDependencies.filter { it.optional }
+
+            val minecraft = tapestry.depends.minecraft
+            val lower = minecraft.version.lower?.let { if (it.inclusive) it.version else it.version.previous() }
+            val upper = minecraft.version.upper?.let { if (it.inclusive) it.version.next() else it.version }
 
             publishMods.modrinth {
                 projectId.set(tapestry.publish.modrinth)
                 accessToken.set(root.providers.environmentVariable("MODRINTH_TOKEN"))
-                minecraftVersions.addAll(tapestry.depends.minecraft)
+
+                minecraftVersionRange {
+                    start = lower?.toString()
+                    end = upper?.toString()
+                }
 
                 requires(*requiredDeps.mapNotNull { it.modrinth }.distinct().toTypedArray())
                 optional(*optionalDeps.mapNotNull { it.modrinth }.distinct().toTypedArray())
@@ -245,7 +249,11 @@ class TapestryPlugin : Plugin<Project> {
             publishMods.curseforge {
                 projectId.set(tapestry.publish.curseforge)
                 accessToken.set(root.providers.environmentVariable("CURSEFORGE_TOKEN"))
-                minecraftVersions.addAll(tapestry.depends.minecraft)
+
+                minecraftVersionRange {
+                    start = lower?.toString()
+                    end = upper?.toString()
+                }
 
                 requires(*requiredDeps.mapNotNull { it.curseforge }.distinct().toTypedArray())
                 optional(*optionalDeps.mapNotNull { it.curseforge }.distinct().toTypedArray())

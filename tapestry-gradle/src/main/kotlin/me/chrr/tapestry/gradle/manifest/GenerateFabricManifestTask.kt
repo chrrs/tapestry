@@ -75,19 +75,11 @@ open class GenerateFabricManifestTask : GenerateManifestTask() {
         val dependencies = mutableMapOf<String, String>()
         manifest.depends = dependencies
 
-        depends.minecraft.ifPresent {
-            // FIXME: for now, skip the version dependency if it's not a full release.
-            if (it.size == 1 && !it[0].matches(Regex("\\d+(?:\\.\\d+)*")))
-                return@ifPresent
-
-            if (it.size == 1)
-                dependencies["minecraft"] = it[0]
-            else
-                dependencies["minecraft"] = ">=${it[0]} <=${it.last()}"
+        dependencies["minecraft"] = depends.minecraft.version.toFabricVersionString()
+        for (dependency in depends.dependencies.get().filterNot { it.optional }) {
+            val modId = dependency.fabric ?: continue
+            dependencies[modId] = dependency.version.toFabricVersionString()
         }
-
-        for (dependency in (depends.fabric.orNull ?: listOf()).filter { !it.optional })
-            dependencies[dependency.id] = dependency.version ?: "*"
 
         val file = outputFile.get().asFile
         file.parentFile.mkdirs()

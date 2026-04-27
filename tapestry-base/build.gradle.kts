@@ -28,7 +28,7 @@ tapestry {
     }
 
     depends {
-        minecraft = rootProject.prop("minecraft.compatible").map { it.split(",") }
+        minecraft.version(rootProject.prop("minecraft.dependency").get())
     }
 
     game {

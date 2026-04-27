@@ -100,22 +100,57 @@ abstract class TapestryExtension(objects: ObjectFactory) {
             }
     }
 
+    /** Mod properties to do with dependencies. Note that this doesn't affect Gradle dependencies, only what's listed in
+     *  mod manifests (fabric.mod.json, neoforge.mods.toml) and when publishing. */
     open class Depends @Inject constructor(objects: ObjectFactory) {
-        val minecraft = objects.listProperty<String>()
+        internal val minecraftDependency = objects.property<Dependency>()
+            .convention(Dependency("minecraft", "minecraft"))
+        internal val dependencies = objects.listProperty<Dependency>()
 
-        val fabric = objects.listProperty<Dependency>()
-        val neoforge = objects.listProperty<Dependency>()
+        /** The Minecraft game dependency. */
+        val minecraft get() = minecraftDependency.get()
 
-        fun fabric(id: String, version: String? = null, slug: String? = null, action: Dependency.() -> Unit = {}) =
-            fabric.add(Dependency(id, version, slug).apply(action))
+        /** Add a mod dependency for both Fabric and NeoForge with the same mod ID. */
+        fun mod(id: String) =
+            Dependency(id, id).also { dependencies.add(it) }
 
-        fun neoforge(id: String, version: String? = null, slug: String? = null, action: Dependency.() -> Unit = {}) =
-            neoforge.add(Dependency(id, version, slug).apply(action))
+        /** Add a mod dependency with different mod ID's for Fabric and NeoForge. If one of them is left out, this means
+         *  the dependency doesn't exist for that platform. */
+        fun mod(fabric: String? = null, neoforge: String? = null) =
+            Dependency(fabric, neoforge).also { dependencies.add(it) }
 
-        class Dependency(val id: String, val version: String?, slug: String?) {
-            var modrinth: String? = slug
-            var curseforge: String? = slug
-            var optional: Boolean = false
+
+        class Dependency(
+            internal var fabric: String?,
+            internal var neoforge: String?,
+            internal var modrinth: String? = null,
+            internal var curseforge: String? = null,
+            internal var version: VersionRange = VersionRange(null, null),
+            internal var optional: Boolean = false,
+        ) {
+            /** Define the project slug used when publishing the mod both for Modrinth and CurseForge. */
+            fun slug(slug: String) = apply {
+                this.modrinth = slug
+                this.curseforge = slug
+            }
+
+            /** Define the project slugs used when publishing with different slugs for Modrinth and CurseForge. If one
+             *  of them is left out, the dependency doesn't exist for that platform. */
+            fun slug(modrinth: String? = null, curseforge: String? = null) = apply {
+                this.modrinth = modrinth
+                this.curseforge = curseforge
+            }
+
+            /** Define that the version of this dependency should be within the given version range. */
+            fun version(version: String) = apply {
+                this.version = VersionRange.parse(version)
+            }
+
+            /** Define the dependency as optional. This will leave it out of the mod manifest, and mark it as such on
+             *  platforms when publishing */
+            fun optional(optional: Boolean = true) = apply {
+                this.optional = optional
+            }
         }
     }
 
