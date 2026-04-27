@@ -32,6 +32,11 @@ jobs:
       - name: Build JARs
         run: ./gradlew build collectJars
 
+      - name: Dry run publish
+        run: ./gradlew publishMods
+        env:
+          PUBLISH_DRY_RUN: '1'
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
