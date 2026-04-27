@@ -1,7 +1,7 @@
 package me.chrr.tapestry.gradle
 
 /** A version range for a dependency, with both an upper bound and a lower bound. */
-data class VersionRange(var lower: Bound?, var upper: Bound?) {
+data class VersionRange(val lower: Bound?, val upper: Bound?) {
     companion object {
         /** Define a version range as "within" the given version, e.g. non-specified parts of the version don't matter.
          *  Ex. the version "within" 26.1 will match 26.1, 26.1.3, but not 26.2. */
@@ -48,6 +48,21 @@ data class VersionRange(var lower: Bound?, var upper: Bound?) {
         }
     }
 
+    /** Check if the given version is within this range. */
+    operator fun contains(version: Version): Boolean {
+        if (lower != null) {
+            if (lower.inclusive && version < lower.version) return false
+            if (!lower.inclusive && version <= lower.version) return false
+        }
+
+        if (upper != null) {
+            if (upper.inclusive && version > upper.version) return false
+            if (!upper.inclusive && version >= upper.version) return false
+        }
+
+        return true
+    }
+
     /** Convert this range to a Fabric-compatible version dependency. */
     fun toFabricVersionString() =
         listOfNotNull(
@@ -71,7 +86,8 @@ data class VersionRange(var lower: Bound?, var upper: Bound?) {
 }
 
 /** A semver-like parsed version. */
-data class Version(val major: Int, val minor: Int? = null, val patch: Int? = null, val suffix: String? = null) {
+data class Version(val major: Int, val minor: Int? = null, val patch: Int? = null, val suffix: String? = null) :
+    Comparable<Version> {
     companion object {
         /** Parse a semver-like version from the given string. */
         fun parse(input: String): Version {
@@ -88,14 +104,6 @@ data class Version(val major: Int, val minor: Int? = null, val patch: Int? = nul
         }
     }
 
-    /** Get the "previous" version from this version, decreasing the lowest significant part of the version. */
-    fun previous() =
-        when {
-            patch != null && patch > 0 -> Version(major, minor, patch - 1)
-            minor != null && minor > 0 -> Version(major, minor - 1, 999)
-            else -> Version(major - 1, 999, 999)
-        }
-
     /** Get the "next" version from this version, increasing the lowest significant part of the version possible. */
     fun next() =
         when {
@@ -104,10 +112,17 @@ data class Version(val major: Int, val minor: Int? = null, val patch: Int? = nul
             else -> Version(major + 1)
         }
 
+    override fun compareTo(other: Version) = when {
+        major != other.major -> major - other.major
+        minor != other.minor -> (minor ?: 0) - (other.minor ?: 0)
+        patch != other.patch -> (patch ?: 0) - (other.patch ?: 0)
+        else -> 0
+    }
+
     override fun toString() =
         StringBuilder("$major")
             .also { if (patch != null || minor != null) it.append('.').append(minor ?: "0") }
-            .also { if (patch != null) it.append('.').append(minor) }
-            .also { if (suffix != null) it.append('-').append(minor) }
+            .also { if (patch != null) it.append('.').append(patch) }
+            .also { if (suffix != null) it.append('-').append(suffix) }
             .toString()
 }

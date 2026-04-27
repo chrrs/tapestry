@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import me.chrr.tapestry.gradle.jij.PrepareJiJJarsTask
 import me.chrr.tapestry.gradle.platform.*
+import me.modmuss50.mpp.MinecraftApi
 import me.modmuss50.mpp.ModPublishExtension
 import me.modmuss50.mpp.MppPlugin
 import me.modmuss50.mpp.ReleaseType
@@ -230,17 +231,16 @@ class TapestryPlugin : Plugin<Project> {
             val optionalDeps = allDependencies.filter { it.optional }
 
             val minecraft = tapestry.depends.minecraft
-            val lower = minecraft.version.lower?.let { if (it.inclusive) it.version else it.version.previous() }
-            val upper = minecraft.version.upper?.let { if (it.inclusive) it.version.next() else it.version }
+            val versions = MinecraftApi().getVersions()
+                .filter { it.type == "release" }
+                .map { Version.parse(it.id) }
+                .filter { it in minecraft.version }
+                .map { it.toString() }
 
             publishMods.modrinth {
                 projectId.set(tapestry.publish.modrinth)
                 accessToken.set(root.providers.environmentVariable("MODRINTH_TOKEN"))
-
-                minecraftVersionRange {
-                    start = lower?.toString()
-                    end = upper?.toString()
-                }
+                minecraftVersions.set(versions)
 
                 requires(*requiredDeps.mapNotNull { it.modrinth }.distinct().toTypedArray())
                 optional(*optionalDeps.mapNotNull { it.modrinth }.distinct().toTypedArray())
@@ -249,11 +249,7 @@ class TapestryPlugin : Plugin<Project> {
             publishMods.curseforge {
                 projectId.set(tapestry.publish.curseforge)
                 accessToken.set(root.providers.environmentVariable("CURSEFORGE_TOKEN"))
-
-                minecraftVersionRange {
-                    start = lower?.toString()
-                    end = upper?.toString()
-                }
+                minecraftVersions.set(versions)
 
                 requires(*requiredDeps.mapNotNull { it.curseforge }.distinct().toTypedArray())
                 optional(*optionalDeps.mapNotNull { it.curseforge }.distinct().toTypedArray())
