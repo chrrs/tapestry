@@ -4,10 +4,12 @@ import me.chrr.tapestry.config.Config;
 import me.chrr.tapestry.config.Option;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.tabs.MenuTabBar;
 import net.minecraft.client.gui.components.tabs.Tab;
 import net.minecraft.client.gui.components.tabs.TabManager;
-import net.minecraft.client.gui.components.tabs.TabNavigationBar;
+import net.minecraft.client.gui.layouts.FrameLayout;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
+import net.minecraft.client.gui.layouts.Layout;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.Screen;
@@ -32,7 +34,7 @@ public class TapestryConfigScreen extends Screen {
     private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
     private final TabManager tabManager = new TabManager(this::addRenderableWidget, this::removeWidget);
 
-    private @Nullable TabNavigationBar tabNavigationBar;
+    private @Nullable MenuTabBar menuTabBar;
     private @Nullable OptionList optionList;
 
     /// Create a new config screen for the given config(s). If multiple configs are passed, the screen will have
@@ -62,15 +64,14 @@ public class TapestryConfigScreen extends Screen {
                     this.layout.getContentHeight(), this.layout.getHeaderHeight()));
         } else {
             // If we have more than one config, show them as tabs.
-            this.tabNavigationBar = this.addRenderableWidget(
-                    TabNavigationBar.builder(this.tabManager, this.width).addTabs(tabs).build());
-            this.tabNavigationBar.selectTab(0, false);
+            this.menuTabBar = this.addRenderableWidget(MenuTabBar.builder(this.tabManager, 0).addTabs(tabs).build());
+            this.menuTabBar.selectTab(0, false);
         }
 
         // Add the footer cancel and done buttons.
         LinearLayout footerLayout = this.layout.addToFooter(LinearLayout.horizontal().spacing(8));
-        footerLayout.addChild(Button.builder(CommonComponents.GUI_CANCEL, (button) -> this.onClose()).build());
-        footerLayout.addChild(Button.builder(CommonComponents.GUI_DONE, (button) -> this.saveAndClose()).build());
+        footerLayout.addChild(Button.builder(CommonComponents.GUI_CANCEL, (_) -> this.onClose()).build());
+        footerLayout.addChild(Button.builder(CommonComponents.GUI_DONE, (_) -> this.saveAndClose()).build());
 
         this.layout.visitWidgets(this::addRenderableWidget);
         this.repositionElements();
@@ -81,11 +82,10 @@ public class TapestryConfigScreen extends Screen {
         if (this.optionList != null) {
             this.layout.arrangeElements();
             this.optionList.updateSize(this.width, this.layout);
-        } else if (this.tabNavigationBar != null) {
-            this.tabNavigationBar.updateWidth(this.width);
-            this.tabNavigationBar.arrangeElements();
+        } else if (this.menuTabBar != null) {
+            this.menuTabBar.arrangeElements(this.width);
 
-            int headerHeight = this.tabNavigationBar.getRectangle().bottom();
+            int headerHeight = this.menuTabBar.getRectangle().bottom();
             ScreenRectangle screenRectangle = new ScreenRectangle(0, headerHeight,
                     this.width, this.height - headerHeight - this.layout.getFooterHeight());
             this.tabManager.setTabArea(screenRectangle);
@@ -118,13 +118,22 @@ public class TapestryConfigScreen extends Screen {
 
     @Override
     public void onClose() {
-        this.minecraft.setScreen(this.parent);
+        this.minecraft.gui.setScreen(this.parent);
     }
 
     /// A single config tab that's used when multiple configs are displayed on the same screen.
     @NullMarked
     @ApiStatus.Internal
-    public record ConfigTab(Config config, OptionList list) implements Tab {
+    public static class ConfigTab implements Tab {
+        private final FrameLayout layout = new FrameLayout();
+        private final Config config;
+        private final OptionList list;
+
+        public ConfigTab(Config config, OptionList list) {
+            this.config = config;
+            this.list = list;
+        }
+
         @Override
         public Component getTabTitle() {
             return this.config.getTitle();
@@ -143,6 +152,12 @@ public class TapestryConfigScreen extends Screen {
         @Override
         public void doLayout(ScreenRectangle rectangle) {
             this.list.updateSizeAndPosition(rectangle.width(), rectangle.height(), rectangle.top());
+            this.layout.arrangeElements();
+        }
+
+        @Override
+        public Layout getLayout() {
+            return this.layout;
         }
     }
 }
