@@ -45,22 +45,20 @@ class FabricPlatform(tapestry: TapestryExtension, target: Project) : LoaderPlatf
 
         // Generate run configurations.
         if (!tapestry.isCI()) {
-            val relativeRunDir = tapestry.game.runDir.get().asFile.relativeTo(target.projectDir)
-
             loom.runs {
                 if (tapestry.info.environment.get() != Environment.Server)
                     named("client") {
-                        isIdeConfigGenerated = false
-                        tapestry.game.username.ifPresent { programArgs("--username", it) }
-                        runDir = relativeRunDir.path
-                        environment = "client"
+                        generateRunConfig = false
+                        tapestry.game.username.ifPresent { programArguments = listOf("--username", it) }
+                        runDirectory = tapestry.game.runDir
+                        runtimeEnvironment = "client"
                     }
 
                 if (tapestry.info.environment.get() != Environment.Client)
                     named("server") {
-                        isIdeConfigGenerated = false
-                        runDir = relativeRunDir.path + "/server"
-                        environment = "server"
+                        generateRunConfig = false
+                        runDirectory = tapestry.game.runDir.dir("server")
+                        runtimeEnvironment = "server"
                     }
             }
         }

@@ -13,6 +13,7 @@ import org.gradle.kotlin.dsl.property
 import java.io.File
 import javax.inject.Inject
 
+@Suppress("unused")
 abstract class TapestryExtension(objects: ObjectFactory) {
     val versions = objects.newInstance<Versions>(objects)
     val projects = objects.newInstance<Projects>(objects)

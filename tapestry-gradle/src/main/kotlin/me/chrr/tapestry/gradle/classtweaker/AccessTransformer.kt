@@ -41,6 +41,6 @@ class AccessTransformer {
             }"
     }
 
-    enum class Visibility { Private, Default, Protected, Public }
+    enum class Visibility { Private, Protected, Public }
     enum class FinalModifier { Add, Remove }
 }
