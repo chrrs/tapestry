@@ -251,6 +251,9 @@ class TapestryPlugin : Plugin<Project> {
                 accessToken.set(root.providers.environmentVariable("CURSEFORGE_TOKEN"))
                 minecraftVersions.set(versions)
 
+                client.set(tapestry.info.environment.map { it !== Environment.Server })
+                server.set(tapestry.info.environment.map { it !== Environment.Client })
+
                 requires(*requiredDeps.mapNotNull { it.curseforge }.distinct().toTypedArray())
                 optional(*optionalDeps.mapNotNull { it.curseforge }.distinct().toTypedArray())
             }
