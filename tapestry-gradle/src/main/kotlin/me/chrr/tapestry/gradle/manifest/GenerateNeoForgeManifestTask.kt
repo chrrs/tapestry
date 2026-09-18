@@ -40,8 +40,11 @@ open class GenerateNeoForgeManifestTask : GenerateManifestTask() {
             mod.credits = info.contributors.orNull
                 ?.let { if (it.isEmpty()) null else it }
                 ?.joinToString(", ")
-            mod.logoFile = info.banner.orElse(info.icon).orNull
             mod.displayURL = info.url.orNull
+
+            mod.logoFile = info.banner.orElse(info.icon).orNull
+            mod.bannerFile = info.banner.orNull
+            mod.iconFile = info.icon.orNull
         })
 
         manifest.mixins = listOf(transform.mixinConfigs, transform.mixinConfigs(PlatformType.NeoForge))

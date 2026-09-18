@@ -23,6 +23,8 @@ class NeoForgeModsToml {
         var authors: String? = null
         var credits: String? = null
         var logoFile: String? = null
+        var iconFile: String? = null
+        var bannerFile: String? = null
         val logoBlur: Boolean = false
         var displayURL: String? = null
     }
